@@ -22,25 +22,42 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler(log_file_path),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler(log_file_path), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 def count_events(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
-    
-    event_count = len(root.findall('.//item'))
-    
+
+    event_count = len(root.findall(".//item"))
+
     return event_count
 
+
 def update_nextcloud_news():
-    output = subprocess.check_output(["sudo", "docker", "exec", "--user", "www-data", "-it", "nextcloud-aio-nextcloud", "php", "occ", "news:feed:list", "danielvolz"])
+    output = subprocess.check_output(
+        [
+            "sudo",
+            "docker",
+            "exec",
+            "--user",
+            "www-data",
+            "-it",
+            "nextcloud-aio-nextcloud",
+            "php",
+            "occ",
+            "news:feed:list",
+            "danielvolz",
+        ]
+    )
     parsed_data = json.loads(output)
-    nextcloud_news_feed_ids = [entry["id"] for entry in parsed_data if entry["url"].startswith("https://rss.danielvolz.org")]
+    nextcloud_news_feed_ids = [
+        entry["id"]
+        for entry in parsed_data
+        if entry["url"].startswith("https://rss.danielvolz.org")
+    ]
 
     def is_container_running(container_name):
         command = f"docker ps --filter name={container_name} --format '{{{{.Names}}}}'"
@@ -56,13 +73,13 @@ def update_nextcloud_news():
         for nextcloud_news_feed_id in nextcloud_news_feed_ids:
             commands = [
                 f"sudo docker exec --user www-data -it nextcloud-aio-nextcloud php occ news:feed:read danielvolz {nextcloud_news_feed_id}",
-                f"sudo docker exec --user www-data -it nextcloud-aio-nextcloud php occ news:updater:update-feed danielvolz {nextcloud_news_feed_id}"
+                f"sudo docker exec --user www-data -it nextcloud-aio-nextcloud php occ news:updater:update-feed danielvolz {nextcloud_news_feed_id}",
             ]
             for command in commands:
                 process = subprocess.Popen(command, shell=True)
                 process.communicate()  # Wait for the command to complete for the command to complete
     else:
-       logger.error(f"Container '{container_name}' is not running.")
+        logger.error(f"Container '{container_name}' is not running.")
 
 
 def move_rss_log_files(destination_folder):
@@ -79,11 +96,13 @@ def move_rss_log_files(destination_folder):
 
 
 def generate_rss_feed(rss_name, rss_title, rss_category):
-    logger.info(f"Start scraping the RSS category {rss_title} in to the file: {rss_name}.")
+    logger.info(
+        f"Start scraping the RSS category {rss_title} in to the file: {rss_name}."
+    )
     today = datetime.date.today()
     date_list = [today + datetime.timedelta(days=i) for i in range(7)]
 
-    locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+    locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
 
     rss = ET.Element("rss", version="2.0")
     channel = ET.SubElement(rss, "channel")
@@ -100,10 +119,14 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
         link = ET.SubElement(channel, "link")
         link.text = url
 
-        event_entries = soup.find_all("article", class_="SP-Teaser SP-Grid__full SP-Teaser--event SP-Teaser--hasLinks SP-Teaser--textual")
+        event_entries = soup.find_all(
+            "article",
+            class_="SP-Teaser SP-Grid__full SP-Teaser--event SP-Teaser--hasLinks SP-Teaser--textual",
+        )
         for event_entry in event_entries:
-            
-            ical_link_element = event_entry.select_one(".SP-Teaser__links .SP-Link.SP-Iconized--left")
+            ical_link_element = event_entry.select_one(
+                ".SP-Teaser__links .SP-Link.SP-Iconized--left"
+            )
             if ical_link_element:
                 ical_link = urllib.parse.urljoin(url, ical_link_element["href"])
                 ical_link = urllib.parse.unquote(ical_link)
@@ -130,27 +153,30 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
                 event_end_time = event_end.strftime("%H:%M Uhr")
                 event_date = event_start.strftime("%a, %d %b %Y")
 
-
                 event_html = f"""
                 <div>"""
 
                 if event_url:
                     webpage_response = requests.get(event_url)
-                    webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
+                    webpage_soup = BeautifulSoup(
+                        webpage_response.content, "html.parser"
+                    )
                     picture_tag = webpage_soup.select_one("picture")
                     if picture_tag:
                         img_tag = picture_tag.find("img")
                         if img_tag:
-                            image_url = urllib.parse.urljoin(event_url, img_tag.get("src"))
+                            image_url = urllib.parse.urljoin(
+                                event_url, img_tag.get("src")
+                            )
                             php_file_name = os.path.basename(event_url)
                             php_file_name = os.path.splitext(php_file_name)[0]
                             if php_file_name in image_url:
-                                event_html += f"<img src='{image_url}' alt='{event_title}'>"
+                                event_html += (
+                                    f"<img src='{image_url}' alt='{event_title}'>"
+                                )
                     else:
                         image_url = "https://www.stuttgart.de/openGraph-200x200.png"
 
-
-                    
                 event_html = f"""
                     <div style="display: flex;">
                     <div style="flex-shrink: 0; margin-right: 10px;">
@@ -164,20 +190,29 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
                     google_maps_link = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(event_location)}"
                     event_html += f"<p><a href='{google_maps_link}' target='_blank'>{event_location}</a></p>"
 
-                entrance_fee_element = webpage_soup.select_one(".SP-CallToAction__text .SP-Paragraph p")
+                entrance_fee_element = webpage_soup.select_one(
+                    ".SP-CallToAction__text .SP-Paragraph p"
+                )
                 if entrance_fee_element and entrance_fee_element.contents:
                     entrance_fee = entrance_fee_element.contents[0].strip()
                     event_html += f"<p>{entrance_fee}</p>"
-                
+
                 if event_url:
-                    extended_description_elements = webpage_soup.select(".SP-ArticleContent .SP-Text:not(.SP-Text--notice) .SP-Paragraph p:not(.SP-CallToAction__text .SP-Paragraph p)")
+                    extended_description_elements = webpage_soup.select(
+                        ".SP-ArticleContent .SP-Text:not(.SP-Text--notice) .SP-Paragraph p:not(.SP-CallToAction__text .SP-Paragraph p)"
+                    )
 
                     for element in extended_description_elements:
-                        br_tags = element.find_all('br')
+                        br_tags = element.find_all("br")
                         for br_tag in br_tags:
-                            br_tag.replace_with('\n')
+                            br_tag.replace_with("\n")
 
-                    extended_description = "\n".join([element.text.strip() for element in extended_description_elements])
+                    extended_description = "\n".join(
+                        [
+                            element.text.strip()
+                            for element in extended_description_elements
+                        ]
+                    )
 
                     if extended_description:
                         event_html += f"<p>{extended_description}</p>"
@@ -189,7 +224,7 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
                 if event_kicker_addon:
                     event_kicker_addon = event_kicker_addon.text.strip()
                     event_html += f"<p><strong>Zusätzliche Info:</strong> {event_kicker_addon}</p>"
-                
+
                 if event_url:
                     event_html += f"<p><a href='{event_url}' target='_blank'>{event_title} (link auf stuttgart.de)</a></p>"
 
@@ -200,19 +235,21 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
                     existing_title_element = existing_item.find("title")
                     if existing_title_element is None:
                         continue
-                    
+
                     existing_title = existing_title_element.text
                     existing_pub_date = existing_item.find("pubDate").text
                     pub_date = formatdate(dt.timestamp(event_start), usegmt=True)
-                    
+
                     if existing_title == event_title and existing_pub_date == pub_date:
                         event_exists = True
-                        logger.info(f"Skipping duplicate event: {event_title}, date: {date}")
+                        logger.info(
+                            f"Skipping duplicate event: {event_title}, date: {date}"
+                        )
                         break
 
                 if event_exists:
                     continue
-                
+
                 item = ET.SubElement(channel, "item")
                 # Add the event to the XML file
                 ET.SubElement(item, "title").text = event_title
@@ -231,29 +268,26 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
 
     tree = ET.parse(rss_path)
     tree.write(rss_path, encoding="utf-8", xml_declaration=True)
-    
+
     logger.info(f"{count_events(rss_path)} events added.")
     logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
-    
+
 
 if __name__ == "__main__":
-    
     destination_folder = "/home/pi/rss_feeds"
-    
+
     logger.info(f"Starting scraping script. ##############")
-    
+
     # rss_name = "buehne_veranstaltungen.rss"
     # rss_title = "Bühne - Stuttgart"
     # rss_category = 79078
     # generate_rss_feed(rss_name, rss_title, rss_category)
-
 
     rss_name = "philo_veranstaltungen.rss"
     rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
     rss_category = 77317
     generate_rss_feed(rss_name, rss_title, rss_category)
 
-    
     # rss_name = "musik_veranstaltungen.rss"
     # rss_title = "Musik - Stuttgart"
     # rss_category = 79091
@@ -262,4 +296,3 @@ if __name__ == "__main__":
     move_rss_log_files(destination_folder)
     update_nextcloud_news()
     logger.info(f"Stopping scraping script. ##############")
-    
