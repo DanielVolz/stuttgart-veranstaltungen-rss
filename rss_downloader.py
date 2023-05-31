@@ -14,7 +14,6 @@ import subprocess
 import json
 import logging
 import html
-import re
 
 # Set up logging
 log_file = "rss_generator.log"
