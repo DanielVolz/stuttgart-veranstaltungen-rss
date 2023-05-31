@@ -14,6 +14,7 @@ import subprocess
 import json
 import logging
 import html
+import re
 
 # Set up logging
 log_file = "rss_generator.log"
@@ -28,6 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 def count_events(xml_file):
+    """counts the events in a xml file
+
+    Args:
+        xml_file (xml object): xml file with events
+
+    Returns:
+        int: count of the events
+    """ """"""
     tree = ET.parse(xml_file)
     root = tree.getroot()
 
@@ -216,6 +225,21 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
 
                     if extended_description:
                         event_html += f"<p>{extended_description}</p>"
+
+                # Find the targeted section element
+                exhibition_hours = webpage_soup.find(
+                    "section",
+                    class_="SP-Text SP-Text--boxed SP-Grid__full--background SP-Grid__full--backgroundHighlighted",
+                )
+
+                if exhibition_hours:
+                    exhibition_hours_div = exhibition_hours.find("div")
+
+                    if exhibition_hours_div:
+                        exhibition_hours_html = "".join(
+                            map(str, exhibition_hours_div.contents)
+                        )
+                        event_html += exhibition_hours_html
 
                 if tags_str:
                     event_html += f"<p><strong>Tags:</strong> {tags_str}</p>"
