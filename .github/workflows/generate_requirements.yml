@@ -1,33 +1,16 @@
-name: Generate requirements.txt
-
-on:
-  push:
-    branches:
-      - main # Modify this based on your branch name
-
+name: Integration Test
+on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@master
+      - name: Self test
+        id: selftest
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: ryan-rozario/pipreqs-action-cpy@master
+
+        # Put an example of mandatory inputs here
         with:
-          python-version: 3.8
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Generate requirements.txt
-        run: pip freeze > requirements.txt
-
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "Daniel Volz"
-          git config --global user.email "mail@danielvolz.org"
-          git add requirements.txt
-          git commit -m "Update requirements.txt"
-          git push
+          PROJECT_PATH: /home/pi/scripts/stuttgart_veranstaltungen_rss #default is the root of the repository
+          REQUIREMENT_PATH: /home/pi/scripts/stuttgart_veranstaltungen_rss/requirements.txt #default is requirement.txt in the root of your repository
