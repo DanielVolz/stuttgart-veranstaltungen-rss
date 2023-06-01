@@ -52,7 +52,6 @@ def update_nextcloud_news():
             "exec",
             "--user",
             "www-data",
-            # "-it",
             "nextcloud-aio-nextcloud",
             "php",
             "occ",
@@ -85,7 +84,16 @@ def update_nextcloud_news():
             ]
             for command in commands:
                 process = subprocess.Popen(command, shell=True)
-                process.communicate()  # Wait for the command to complete for the command to complete
+                process.communicate()
+
+                if process.returncode == 0:
+                    # Command finished successfully
+                    logger.info(f"Command '{command}' executed successfully.")
+                else:
+                    # Command encountered an error
+                    logger.error(
+                        f"Command '{command}' encountered an error with return code {process.returncode}."
+                    )
     else:
         logger.error(f"Container '{container_name}' is not running.")
 
@@ -301,20 +309,20 @@ if __name__ == "__main__":
 
     logger.info(f"Starting scraping script. ##############")
 
-    rss_name = "buehne_veranstaltungen.rss"
-    rss_title = "Bühne - Stuttgart"
-    rss_category = 79078
-    generate_rss_feed(rss_name, rss_title, rss_category)
+    # rss_name = "buehne_veranstaltungen.rss"
+    # rss_title = "Bühne - Stuttgart"
+    # rss_category = 79078
+    # generate_rss_feed(rss_name, rss_title, rss_category)
 
     rss_name = "philo_veranstaltungen.rss"
     rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
     rss_category = 77317
     generate_rss_feed(rss_name, rss_title, rss_category)
 
-    rss_name = "musik_veranstaltungen.rss"
-    rss_title = "Musik - Stuttgart"
-    rss_category = 79091
-    generate_rss_feed(rss_name, rss_title, rss_category)
+    # rss_name = "musik_veranstaltungen.rss"
+    # rss_title = "Musik - Stuttgart"
+    # rss_category = 79091
+    # generate_rss_feed(rss_name, rss_title, rss_category)
 
     move_rss_log_files(destination_folder)
     update_nextcloud_news()
