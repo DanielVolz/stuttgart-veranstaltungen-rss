@@ -14,7 +14,6 @@ import subprocess
 import json
 import logging
 import html
-from loguru import logger2
 
 # Set up logging
 log_file = "rss_generator.log"
@@ -53,7 +52,6 @@ def update_nextcloud_news():
             "exec",
             "--user",
             "www-data",
-            "-it",
             "nextcloud-aio-nextcloud",
             "php",
             "occ",
@@ -81,8 +79,6 @@ def update_nextcloud_news():
         logger.info("Updating Nextcloud News feeds.")
         for nextcloud_news_feed_id in nextcloud_news_feed_ids:
             commands = [
-                f"sudo docker exec --user www-data -it nextcloud-aio-nextcloud php occ news:feed:read danielvolz {nextcloud_news_feed_id}",
-                f"sudo docker exec --user www-data -it nextcloud-aio-nextcloud php occ news:updater:update-feed danielvolz {nextcloud_news_feed_id}",
             ]
             for command in commands:
                 process = subprocess.Popen(command, shell=True)
@@ -301,7 +297,6 @@ if __name__ == "__main__":
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info(f"Starting scraping script. ##############")
-    logger2.debug("That's it, beautiful and simple logging!")
     
     rss_name = "buehne_veranstaltungen.rss"
     rss_title = "Bühne - Stuttgart"
