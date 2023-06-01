@@ -12,11 +12,10 @@ Before running the script, make sure you have the following prerequisites instal
 - `pytz` library
 - `ics` library
 
-
 You can install the required libraries using pip:
 
 ```shell
-pip install -r requirements.txt
+pip install -r reqs/requirements.txt
 
 ```
 
