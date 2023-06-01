@@ -1,4 +1,4 @@
-# RSS Generator
+# Stuttgart events RSS Generator
 
 This script is a Python script for generating RSS feeds by scraping event data from a website.
 

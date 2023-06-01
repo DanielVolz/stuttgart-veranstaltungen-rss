@@ -238,7 +238,7 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
                         exhibition_hours_html = "".join(
                             map(str, exhibition_hours_div.contents)
                         )
-                        event_html += exhibition_hours_html
+                        event_html += f"<br/>{exhibition_hours_html}"
 
                 if tags_str:
                     event_html += f"<p><strong>Tags:</strong> {tags_str}</p>"
@@ -301,20 +301,20 @@ if __name__ == "__main__":
 
     logger.info(f"Starting scraping script. ##############")
 
-    # rss_name = "buehne_veranstaltungen.rss"
-    # rss_title = "Bühne - Stuttgart"
-    # rss_category = 79078
-    # generate_rss_feed(rss_name, rss_title, rss_category)
+    rss_name = "buehne_veranstaltungen.rss"
+    rss_title = "Bühne - Stuttgart"
+    rss_category = 79078
+    generate_rss_feed(rss_name, rss_title, rss_category)
 
     rss_name = "philo_veranstaltungen.rss"
     rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
     rss_category = 77317
     generate_rss_feed(rss_name, rss_title, rss_category)
 
-    # rss_name = "musik_veranstaltungen.rss"
-    # rss_title = "Musik - Stuttgart"
-    # rss_category = 79091
-    # generate_rss_feed(rss_name, rss_title, rss_category)
+    rss_name = "musik_veranstaltungen.rss"
+    rss_title = "Musik - Stuttgart"
+    rss_category = 79091
+    generate_rss_feed(rss_name, rss_title, rss_category)
 
     move_rss_log_files(destination_folder)
     update_nextcloud_news()
