@@ -14,6 +14,7 @@ import subprocess
 import json
 import logging
 import html
+from loguru import logger2
 
 # Set up logging
 log_file = "rss_generator.log"
@@ -300,7 +301,8 @@ if __name__ == "__main__":
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info(f"Starting scraping script. ##############")
-
+    logger2.debug("That's it, beautiful and simple logging!")
+    
     rss_name = "buehne_veranstaltungen.rss"
     rss_title = "Bühne - Stuttgart"
     rss_category = 79078
