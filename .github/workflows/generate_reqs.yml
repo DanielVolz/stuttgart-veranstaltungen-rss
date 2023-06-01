@@ -10,5 +10,5 @@ jobs:
 
         with:
           PROJECT_PATH: .
-          REQUIREMENT_PATH: ./reqs/requirements.txt
+          REQUIREMENT_PATH: ./requirements.txt
           COMMIT_MESSAGE: "update/add requirements.txt"
