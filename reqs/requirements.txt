@@ -1,5 +1,4 @@
 beautifulsoup4==4.12.2
 ics==0.7.2
-loguru==0.7.0
 pytz==2023.3
 Requests==2.31.0
