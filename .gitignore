@@ -173,4 +173,4 @@ cython_debug/
 *.vsix
 .wolf*
 cspell.json
-rss_feeds.code-workspace
+*.code-workspace
