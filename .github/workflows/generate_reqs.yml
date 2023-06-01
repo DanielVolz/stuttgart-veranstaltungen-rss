@@ -9,6 +9,6 @@ jobs:
         uses: ekvanox/pipreqs-action@master
 
         with:
-          #   PROJECT_PATH: .
-          #   REQUIREMENT_PATH: ./requirements.txt
+          PROJECT_PATH: "/home/pi/scripts/stuttgart-veranstaltungen-rss"
+          REQUIREMENT_PATH: "/home/pi/scripts/stuttgart-veranstaltungen-rss/reqs/requirements.txt"
           COMMIT_MESSAGE: "update/add requirements.txt"
