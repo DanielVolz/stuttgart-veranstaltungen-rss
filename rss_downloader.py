@@ -15,15 +15,78 @@ import json
 import logging
 import html
 
+# Constants
+GERMANY_TIMEZONE = "Europe/Berlin"
+DEFAULT_IMAGE_URL = "https://www.stuttgart.de/openGraph-200x200.png"
+
 
 def count_events(xml_file):
-    tree = ET.parse(xml_file)
-    root = tree.getroot()
-    event_count = len(root.findall(".//item"))
-    return event_count
+    """
+    Count the number of events in an XML file.
+
+    Parameters:
+        xml_file (str): The path to the XML file containing event data.
+
+    Returns:
+        int: The number of events found in the XML file.
+
+    Raises:
+        Exception: If an error occurs during parsing or finding events.
+    """
+
+    try:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        event_count = len(root.findall(".//item"))
+        return event_count
+    except Exception as e:
+        # Handle any exception that may occur
+        print(f"An error occurred: {e}")
 
 
-def update_nextcloud_news():
+def get_running_containers(container_name):
+    """
+    Check if a Docker container is running.
+
+    Parameters:
+        container_name (str): The name of the Docker container.
+
+    Returns:
+        bool: True if the specified container is running, False otherwise.
+    """
+
+    command = f"docker ps --filter name={container_name} --format '{{{{.Names}}}}'"
+    output = subprocess.check_output(command, shell=True, text=True)
+    running_containers = output.splitlines()
+    return container_name in running_containers
+
+
+def execute_shell_command(command):
+    """
+    Execute a shell command.
+
+    Parameters:
+        command (str): The shell command to execute.
+
+    Returns:
+        None
+
+    Raises:
+        CalledProcessError: If the shell command returns a non-zero exit status.
+    """
+
+    process = subprocess.Popen(command, shell=True)
+    process.communicate()
+
+    if process.returncode == 0:
+        logger.info(f"Command '{command}' executed successfully.")
+    else:
+        logger.error(
+            f"Command '{command}' encountered an error with return code {process.returncode}."
+        )
+
+
+def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_name):
     output = subprocess.check_output(
         [
             "sudo",
@@ -31,50 +94,29 @@ def update_nextcloud_news():
             "exec",
             "--user",
             "www-data",
-            "nextcloud-aio-nextcloud",
+            nextcloud_container_name,
             "php",
             "occ",
             "news:feed:list",
-            "danielvolz",
+            nextcloud_user_id,
         ]
     )
     parsed_data = json.loads(output)
     nextcloud_news_feed_ids = [
-        entry["id"]
-        for entry in parsed_data
-        if entry["url"].startswith("https://rss.danielvolz.org")
+        entry["id"] for entry in parsed_data if entry["url"].startswith(tld_rss_feed)
     ]
 
-    def is_container_running(container_name):
-        command = f"docker ps --filter name={container_name} --format '{{{{.Names}}}}'"
-        output = subprocess.check_output(command, shell=True, text=True)
-        running_containers = output.splitlines()
-        return container_name in running_containers
-
-    container_name = "nextcloud-aio-nextcloud"
-
-    if is_container_running(container_name):
-        # Execute each command
+    if get_running_containers(nextcloud_container_name):
         logger.info("Updating Nextcloud News feeds.")
         for nextcloud_news_feed_id in nextcloud_news_feed_ids:
             commands = [
-                f"sudo docker exec --user www-data nextcloud-aio-nextcloud php occ news:feed:read danielvolz {nextcloud_news_feed_id}",
-                f"sudo docker exec --user www-data nextcloud-aio-nextcloud php occ news:updater:update-feed danielvolz {nextcloud_news_feed_id}",
+                f"sudo docker exec --user www-data {nextcloud_container_name} php occ news:feed:read {nextcloud_user_id} {nextcloud_news_feed_id}",
+                f"sudo docker exec --user www-data {nextcloud_container_name} php occ news:updater:update-feed {nextcloud_user_id} {nextcloud_news_feed_id}",
             ]
             for command in commands:
-                process = subprocess.Popen(command, shell=True)
-                process.communicate()
-
-                if process.returncode == 0:
-                    # Command finished successfully
-                    logger.info(f"Command '{command}' executed successfully.")
-                else:
-                    # Command encountered an error
-                    logger.error(
-                        f"Command '{command}' encountered an error with return code {process.returncode}."
-                    )
+                execute_shell_command(command)
     else:
-        logger.error(f"Container '{container_name}' is not running.")
+        logger.error(f"Container '{nextcloud_container_name}' is not running.")
 
 
 def move_rss_log_files(destination_folder):
@@ -105,7 +147,13 @@ def create_date_list():
 
 
 def fetch_event_entries(url):
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching event entries: {e}")
+        return []
+
     soup = BeautifulSoup(response.content, "html.parser")
     event_entries = soup.find_all(
         "article",
@@ -173,9 +221,15 @@ def extract_event_data(event):
 
 def fetch_event_image_url(event_url):
     if not event_url:
-        return "https://www.stuttgart.de/openGraph-200x200.png"
+        return DEFAULT_IMAGE_URL
 
-    webpage_response = requests.get(event_url)
+    try:
+        webpage_response = requests.get(event_url)
+        webpage_response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching event image URL: {e}")
+        return DEFAULT_IMAGE_URL
+
     webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     picture_tag = webpage_soup.select_one("picture")
 
@@ -188,7 +242,7 @@ def fetch_event_image_url(event_url):
             if php_file_name in image_url:
                 return image_url
 
-    return "https://www.stuttgart.de/openGraph-200x200.png"
+    return DEFAULT_IMAGE_URL
 
 
 def generate_google_maps_link(location):
@@ -201,7 +255,13 @@ def parse_entrance_fee(event_url):
     if not event_url:
         return None
 
-    webpage_response = requests.get(event_url)
+    try:
+        webpage_response = requests.get(event_url)
+        webpage_response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error parsing entrance fee: {e}")
+        return None
+
     webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     entrance_fee_element = webpage_soup.select_one(
         ".SP-CallToAction__text .SP-Paragraph p"
@@ -312,10 +372,8 @@ def add_event_to_channel(event, event_html, channel):
 
         existing_title = existing_title_element.text
         existing_pub_date = existing_item.find("pubDate").text
-        # pub_date = formatdate(event_start.datetime.timestamp(), usegmt=True)
         if existing_title == event_title and existing_pub_date == pub_date:
             event_exists = True
-            # logger.info(f"Existing event: {existing_title}, date: {existing_pub_date}")
             logger.info(
                 f"Skipping adding event: Duplicate event: {event_title}, date: {pub_date}"
             )
@@ -338,11 +396,20 @@ def write_rss_to_file(rss, rss_name):
     rss_path = os.path.join(script_directory, rss_name)
 
     xml_data = ET.tostring(rss, encoding="utf-8")
-    with open(rss_path, "wb") as f:
-        f.write(xml_data)
+    try:
+        with open(rss_path, "wb") as f:
+            f.write(xml_data)
+    except IOError as e:
+        logger.error(f"Failed to write XML data to {rss_path}: {e}")
+        return
 
-    tree = ET.parse(rss_path)
-    tree.write(rss_path, encoding="utf-8", xml_declaration=True)
+    try:
+        tree = ET.parse(rss_path)
+        tree.write(rss_path, encoding="utf-8", xml_declaration=True)
+    except ET.ParseError as e:
+        logger.error(f"Failed to parse XML data from {rss_path}: {e}")
+        return
+
     logger.info(f"{count_events(rss_path)} events added.")
     logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
 
@@ -404,8 +471,13 @@ def main():
 
     logger.info("RSS feed generation completed.")
 
-    update_nextcloud_news()
+    nextcloud_user_id = "danielvolz"
+    rss_tld = "https://rss.danielvolz.org"
+    nextcloud_container_name = "nextcloud-aio-nextcloud"
+
+    update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
     move_rss_log_files(destination_folder)
+
     logger.info(f"Stopping scraping script. ##############")
 
 
