@@ -598,11 +598,10 @@ def write_rss_to_file(rss, rss_name):
     rss_path = os.path.join(script_directory, rss_name)
 
     xml_data = ET.tostring(rss, encoding="utf-8")  # Changed encoding to "unicode"
+    
     try:
-        with open(
-            rss_path, "w", encoding="utf-8"
-        ) as f:  # Changed file mode to "w" (text mode)
-            f.write(xml_data)
+        with open(rss_path, "w", encoding="utf-8") as f:
+            f.write(xml_data.decode("utf-8"))  # Decode the bytes using UTF-8
     except IOError as e:
         logger.error(f"Failed to write XML data to {rss_path}: {e}")
         return
@@ -677,15 +676,15 @@ def main():
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info("Starting scraping script. ##############")
-    # rss_name = "buehne_veranstaltungen.rss"
-    # rss_title = "Bühne - Stuttgart"
-    # rss_category = 79078
-    # generate_rss_feed(rss_name, rss_title, rss_category)
+    rss_name = "buehne_veranstaltungen.rss"
+    rss_title = "Bühne - Stuttgart"
+    rss_category = 79078
+    generate_rss_feed(rss_name, rss_title, rss_category)
 
-    # rss_name = "philo_veranstaltungen.rss"
-    # rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
-    # rss_category = 77317
-    # generate_rss_feed(rss_name, rss_title, rss_category)
+    rss_name = "philo_veranstaltungen.rss"
+    rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
+    rss_category = 77317
+    generate_rss_feed(rss_name, rss_title, rss_category)
 
     rss_name = "musik_veranstaltungen.rss"
     rss_title = "Musik - Stuttgart"
@@ -698,8 +697,8 @@ def main():
     rss_tld = "https://rss.danielvolz.org"
     nextcloud_container_name = "nextcloud-aio-nextcloud"
 
-    # update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
     move_rss_log_files(destination_folder)
+    update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
 
     logger.info("Stopping scraping script. ##############")
 
