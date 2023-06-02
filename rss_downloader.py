@@ -149,12 +149,20 @@ def move_rss_log_files(destination_folder):
     source_folder = script_directory
 
     file_list = os.listdir(source_folder)
+    files_moved = False  # Variable to track if any files were moved
+
     for file_name in file_list:
         if file_name.endswith((".rss", ".log")):
             source_path = os.path.join(source_folder, file_name)
             destination_path = os.path.join(destination_folder, file_name)
             shutil.move(source_path, destination_path)
             logger.info("Moved file: %s", file_name)
+            files_moved = True  # Set the flag to indicate files were moved
+
+    if not files_moved:
+        logger.warning("No files to move.")
+
+
 
 
 def create_rss_element(rss_title):
