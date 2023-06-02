@@ -87,6 +87,21 @@ def execute_shell_command(command):
 
 
 def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_name):
+    """
+    Update Nextcloud News feeds for a specific user.
+
+    Parameters:
+        nextcloud_user_id (str): The ID of the Nextcloud user.
+        tld_rss_feed (str): The top-level domain of the RSS feed.
+        nextcloud_container_name (str): The name of the Nextcloud Docker container.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If an error occurs during the update process or if the container is not running.
+    """
+
     output = subprocess.check_output(
         [
             "sudo",
@@ -120,6 +135,16 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
 
 
 def move_rss_log_files(destination_folder):
+    """
+    Move RSS and log files to a destination folder.
+
+    Parameters:
+        destination_folder (str): The path to the destination folder.
+
+    Returns:
+        None
+    """
+
     script_directory = os.path.dirname(os.path.abspath(__file__))
     source_folder = script_directory
 
@@ -133,6 +158,16 @@ def move_rss_log_files(destination_folder):
 
 
 def create_rss_element(rss_title):
+    """
+    Create an RSS element with a title.
+
+    Parameters:
+        rss_title (str): The title of the RSS element.
+
+    Returns:
+        Tuple: A tuple containing the root RSS element and the channel element.
+    """
+
     rss = ET.Element("rss", version="2.0")
     channel = ET.SubElement(rss, "channel")
     title = ET.SubElement(channel, "title")
@@ -141,12 +176,32 @@ def create_rss_element(rss_title):
 
 
 def create_date_list():
+    """
+    Create a list of dates for the next 7 days.
+
+    Returns:
+        List: A list of date objects representing the next 7 days.
+    """
+
     today = datetime.date.today()
     date_list = [today + datetime.timedelta(days=i) for i in range(7)]
     return date_list
 
 
 def fetch_event_entries(url):
+    """
+    Fetch event entries from a given URL.
+
+    Parameters:
+        url (str): The URL of the webpage to fetch event entries from.
+
+    Returns:
+        List: A list of BeautifulSoup article objects representing event entries.
+
+    Raises:
+        requests.exceptions.RequestException: If an error occurs while making the HTTP request.
+    """
+
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -163,12 +218,36 @@ def fetch_event_entries(url):
 
 
 def process_event_entry(event_entry, url, channel):
+    """
+    Process an event entry by extracting event information, building event HTML,
+    and adding the event to a channel.
+
+    Parameters:
+        - event_entry (BeautifulSoup.Tag): The HTML tag representing the event entry.
+        - url (str): The base URL of the event.
+        - channel (ElementTree.Element): The XML element representing the channel.
+
+    Returns:
+        None
+    """
+
     ical_link, event = extract_event_info(event_entry, url)
     event_html = build_event_html(event, ical_link)
     add_event_to_channel(event, event_html, channel)
 
 
 def extract_event_info(event_entry, url):
+    """
+    Extract event information from an event entry.
+
+    Parameters:
+        - event_entry (BeautifulSoup.Tag): The HTML tag representing the event entry.
+        - url (str): The base URL of the event.
+
+    Returns:
+        Tuple[str, ics.Event]: A tuple containing the extracted iCal link and the event object.
+    """
+
     ical_link_element = event_entry.select_one(
         ".SP-Teaser__links .SP-Link.SP-Iconized--left"
     )
@@ -182,6 +261,17 @@ def extract_event_info(event_entry, url):
 
 
 def build_event_html(event, ical_link):
+    """
+    Build HTML content for an event.
+
+    Parameters:
+        - event (ics.Event): The event object.
+        - ical_link (str): The iCal link of the event.
+
+    Returns:
+        str: The generated HTML content for the event.
+    """
+
     event_data = extract_event_data(event)
     image_url = fetch_event_image_url(event_data["url"])
     google_maps_link = generate_google_maps_link(event_data["location"])
@@ -202,6 +292,16 @@ def build_event_html(event, ical_link):
 
 
 def extract_event_data(event):
+    """
+    Extract event data from an event object.
+
+    Parameters:
+        - event (ics.Event): The event object.
+
+    Returns:
+        dict: A dictionary containing the extracted event data.
+    """
+
     germany_tz = pytz.timezone("Europe/Berlin")
     event_start = event.begin.astimezone(germany_tz)
     event_end = event.end.astimezone(germany_tz)
@@ -220,6 +320,16 @@ def extract_event_data(event):
 
 
 def fetch_event_image_url(event_url):
+    """
+    Fetch the image URL for an event.
+
+    Parameters:
+        - event_url (str): The URL of the event.
+
+    Returns:
+        str: The fetched image URL or the default image URL if fetching fails.
+    """
+
     if not event_url:
         return DEFAULT_IMAGE_URL
 
@@ -246,12 +356,32 @@ def fetch_event_image_url(event_url):
 
 
 def generate_google_maps_link(location):
+    """
+    Generate a Google Maps link for a location.
+
+    Parameters:
+        - location (str): The location string.
+
+    Returns:
+        str: The generated Google Maps link.
+    """
+
     if not location:
         return None
     return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(location)}"
 
 
 def parse_entrance_fee(event_url):
+    """
+    Parse the entrance fee for an event.
+
+    Parameters:
+        - event_url (str): The URL of the event.
+
+    Returns:
+        str or None: The parsed entrance fee or None if parsing fails.
+    """
+
     if not event_url:
         return None
 
@@ -274,6 +404,16 @@ def parse_entrance_fee(event_url):
 
 
 def parse_extended_description(event_url):
+    """
+    Parse the extended description for an event.
+
+    Parameters:
+        - event_url (str): The URL of the event.
+
+    Returns:
+        str or None: The parsed extended description or None if parsing fails.
+    """
+
     if not event_url:
         return None
 
@@ -294,6 +434,16 @@ def parse_extended_description(event_url):
 
 
 def parse_exhibition_hours(event_url):
+    """
+    Parse the exhibition hours for an event.
+
+    Parameters:
+        - event_url (str): The URL of the event.
+
+    Returns:
+        str or None: The parsed exhibition hours or None if parsing fails.
+    """
+
     if not event_url:
         return None
 
@@ -321,6 +471,22 @@ def render_event_html(
     exhibition_hours_html,
     ical_link,
 ):
+    """
+    Render the HTML content for an event.
+
+    Parameters:
+        - event_data (dict): The event data dictionary.
+        - image_url (str): The URL of the event image.
+        - google_maps_link (str): The Google Maps link for the event location.
+        - entrance_fee (str or None): The entrance fee for the event.
+        - extended_description (str or None): The extended description of the event.
+        - exhibition_hours_html (str or None): The HTML content for exhibition hours.
+        - ical_link (str): The iCal link for the event.
+
+    Returns:
+        str: The rendered HTML content for the event.
+    """
+
     event_html = f"""
     <div>
         <div style="display: flex;">
@@ -360,6 +526,18 @@ def render_event_html(
 
 
 def add_event_to_channel(event, event_html, channel):
+    """
+    Add an event to the XML channel.
+
+    Parameters:
+        - event (ics.Event): The event object.
+        - event_html (str): The HTML content for the event.
+        - channel (ElementTree.Element): The XML element representing the channel.
+
+    Returns:
+        None
+    """
+
     event_title = event.name
     event_start = event.begin
     pub_date = formatdate(event_start.datetime.timestamp(), usegmt=True)
@@ -392,6 +570,17 @@ def add_event_to_channel(event, event_html, channel):
 
 
 def write_rss_to_file(rss, rss_name):
+    """
+    Write the RSS feed to a file.
+
+    Parameters:
+        - rss (ElementTree.Element): The XML element representing the RSS feed.
+        - rss_name (str): The name of the RSS feed file.
+
+    Returns:
+        None
+    """
+
     script_directory = os.path.dirname(os.path.abspath(__file__))
     rss_path = os.path.join(script_directory, rss_name)
 
@@ -415,6 +604,18 @@ def write_rss_to_file(rss, rss_name):
 
 
 def generate_rss_feed(rss_name, rss_title, rss_category):
+    """
+    Generate an RSS feed for a given category.
+
+    Parameters:
+        - rss_name (str): The name of the RSS feed file.
+        - rss_title (str): The title of the RSS feed.
+        - rss_category (str): The category of the RSS feed.
+
+    Returns:
+        None
+    """
+
     logger.info(
         f"Start scraping the RSS category {rss_title} in to the file: {rss_name}."
     )
@@ -436,6 +637,13 @@ def generate_rss_feed(rss_name, rss_title, rss_category):
 
 
 def setup_logging():
+    """
+    Set up logging for the RSS generator.
+
+    Returns:
+        logging.Logger: The logger object for logging events.
+    """
+
     # Set up logging
     log_file = "rss_generator.log"
     log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), log_file)
