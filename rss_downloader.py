@@ -134,82 +134,111 @@ def extract_event_info(event_entry, url):
 
 
 def build_event_html(event, ical_link):
-    event_title = event.name
-    event_start = event.begin
-    event_end = event.end
-    event_location = event.location
-    event_description = event.description
-    event_url = event.url
-    event_categories = event.categories
+    event_data = extract_event_data(event)
+    image_url = fetch_event_image_url(event_data["url"])
+    google_maps_link = generate_google_maps_link(event_data["location"])
+    entrance_fee = parse_entrance_fee(event_data["url"])
+    extended_description = parse_extended_description(event_data["url"])
+    exhibition_hours_html = parse_exhibition_hours(event_data["url"])
 
+    event_html = render_event_html(
+        event_data,
+        image_url,
+        google_maps_link,
+        entrance_fee,
+        extended_description,
+        exhibition_hours_html,
+        ical_link,
+    )
+    return event_html
+
+
+def extract_event_data(event):
     germany_tz = pytz.timezone("Europe/Berlin")
-    event_start = event_start.astimezone(germany_tz)
-    event_end = event_end.astimezone(germany_tz)
+    event_start = event.begin.astimezone(germany_tz)
+    event_end = event.end.astimezone(germany_tz)
 
-    event_start_time = event_start.strftime("%H:%M Uhr")
-    event_end_time = event_end.strftime("%H:%M Uhr")
-    event_date = event_start.strftime("%a, %d %b %Y")
+    return {
+        "title": event.name,
+        "start_time": event_start.strftime("%H:%M Uhr"),
+        "end_time": event_end.strftime("%H:%M Uhr"),
+        "date": event_start.strftime("%a, %d %b %Y"),
+        "location": event.location,
+        "description": event.description,
+        "url": event.url,
+        "categories": event.categories,
+        "tags_str": ", ".join(event.categories),
+    }
 
-    tags_str = ", ".join(event_categories)
 
-    event_html = f"""
-    <div>"""
+def fetch_event_image_url(event_url):
+    if not event_url:
+        return "https://www.stuttgart.de/openGraph-200x200.png"
 
-    if event_url:
-        webpage_response = requests.get(event_url)
-        webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
-        picture_tag = webpage_soup.select_one("picture")
-        if picture_tag:
-            img_tag = picture_tag.find("img")
-            if img_tag:
-                image_url = urllib.parse.urljoin(event_url, img_tag.get("src"))
-                php_file_name = os.path.basename(event_url)
-                php_file_name = os.path.splitext(php_file_name)[0]
-                if php_file_name in image_url:
-                    event_html += f"<img src='{image_url}' alt='{event_title}'>"
-        else:
-            image_url = "https://www.stuttgart.de/openGraph-200x200.png"
+    webpage_response = requests.get(event_url)
+    webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
+    picture_tag = webpage_soup.select_one("picture")
 
-    event_html = f"""
-        <div style="display: flex;">
-        <div style="flex-shrink: 0; margin-right: 10px;">
-        <a href='{event_url}' target='_blank' style='float: left; margin-right: 10px;'><img src='{image_url}' alt='{event_title}' style='max-width: 200px;'></a>
-        </div>
-        <div>
-        <p>{event_description}</p>
-        <p><a href='{ical_link}' target='_blank'>{event_start_time} - {event_end_time}, {event_date} &#128197;</a></p>"""
+    if picture_tag:
+        img_tag = picture_tag.find("img")
+        if img_tag:
+            image_url = urllib.parse.urljoin(event_url, img_tag.get("src"))
+            php_file_name = os.path.basename(event_url)
+            php_file_name = os.path.splitext(php_file_name)[0]
+            if php_file_name in image_url:
+                return image_url
 
-    if event_location:
-        google_maps_link = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(event_location)}"
-        event_html += (
-            f"<p><a href='{google_maps_link}' target='_blank'>{event_location}</a></p>"
-        )
+    return "https://www.stuttgart.de/openGraph-200x200.png"
 
+
+def generate_google_maps_link(location):
+    if not location:
+        return None
+    return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(location)}"
+
+
+def parse_entrance_fee(event_url):
+    if not event_url:
+        return None
+
+    webpage_response = requests.get(event_url)
+    webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     entrance_fee_element = webpage_soup.select_one(
         ".SP-CallToAction__text .SP-Paragraph p"
     )
+
     if entrance_fee_element and entrance_fee_element.contents:
-        entrance_fee = entrance_fee_element.contents[0].strip()
-        event_html += f"<p>{entrance_fee}</p>"
+        return entrance_fee_element.contents[0].strip()
 
-    if event_url:
-        extended_description_elements = webpage_soup.select(
-            ".SP-ArticleContent .SP-Text:not(.SP-Text--notice) .SP-Paragraph p:not(.SP-CallToAction__text .SP-Paragraph p)"
-        )
+    return None
 
-        for element in extended_description_elements:
-            br_tags = element.find_all("br")
-            for br_tag in br_tags:
-                br_tag.replace_with("\n")
 
-        extended_description = "\n".join(
-            [element.text.strip() for element in extended_description_elements]
-        )
+def parse_extended_description(event_url):
+    if not event_url:
+        return None
 
-        if extended_description:
-            event_html += f"<p>{extended_description}</p>"
+    webpage_response = requests.get(event_url)
+    webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
+    extended_description_elements = webpage_soup.select(
+        ".SP-ArticleContent .SP-Text:not(.SP-Text--notice) .SP-Paragraph p:not(.SP-CallToAction__text .SP-Paragraph p)"
+    )
 
-    # Find the targeted section element
+    for element in extended_description_elements:
+        br_tags = element.find_all("br")
+        for br_tag in br_tags:
+            br_tag.replace_with("\n")
+
+    return "\n".join(
+        [element.text.strip() for element in extended_description_elements]
+    )
+
+
+def parse_exhibition_hours(event_url):
+    if not event_url:
+        return None
+
+    webpage_response = requests.get(event_url)
+    webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     exhibition_hours = webpage_soup.find(
         "section",
         class_="SP-Text SP-Text--boxed SP-Grid__full--background SP-Grid__full--backgroundHighlighted",
@@ -217,24 +246,56 @@ def build_event_html(event, ical_link):
 
     if exhibition_hours:
         exhibition_hours_div = exhibition_hours.find("div")
-
         if exhibition_hours_div:
-            exhibition_hours_html = "".join(map(str, exhibition_hours_div.contents))
-            event_html += f"<br/>{exhibition_hours_html}"
+            return "".join(map(str, exhibition_hours_div.contents))
 
-    if tags_str:
-        event_html += f"<p><strong>Tags:</strong> {tags_str}</p>"
+    return None
 
-    event_kicker_addon = webpage_soup.select_one(".SP-Kicker__addOn")
+
+def render_event_html(
+    event_data,
+    image_url,
+    google_maps_link,
+    entrance_fee,
+    extended_description,
+    exhibition_hours_html,
+    ical_link,
+):
+    event_html = f"""
+    <div>
+        <div style="display: flex;">
+            <div style="flex-shrink: 0; margin-right: 10px;">
+                <a href='{event_data["url"]}' target='_blank' style='float: left; margin-right: 10px;'><img src='{image_url}' alt='{event_data["title"]}' style='max-width: 200px;'></a>
+            </div>
+            <div>
+                <p>{event_data["description"]}</p>
+                <p><a href='{ical_link}' target='_blank'>{event_data["start_time"]} - {event_data["end_time"]}, {event_data["date"]} &#128197;</a></p>"""
+
+    if google_maps_link:
+        event_html += f"<p><a href='{google_maps_link}' target='_blank'>{event_data['location']}</a></p>"
+
+    if entrance_fee:
+        event_html += f"<p>{entrance_fee}</p>"
+
+    if extended_description:
+        event_html += f"<p>{extended_description}</p>"
+
+    if exhibition_hours_html:
+        event_html += f"<br/>{exhibition_hours_html}"
+
+    if event_data["tags_str"]:
+        event_html += f"<p><strong>Tags:</strong> {event_data['tags_str']}</p>"
+
+    event_kicker_addon = event_data.get("kicker_addon", None)
     if event_kicker_addon:
-        event_kicker_addon = event_kicker_addon.text.strip()
-        event_html += f"<p><strong>Zusätzliche Info:</strong> {event_kicker_addon}</p>"
+        event_html += (
+            f"<p><strong>Zusätzliche Info:</strong> {{event_kicker_addon}}</p>"
+        )
 
-    if event_url:
-        event_html += f"<p><a href='{event_url}' target='_blank'>{event_title} (link auf stuttgart.de)</a></p>"
+    if event_data["url"]:
+        event_html += f"<p><a href='{event_data['url']}' target='_blank'>{event_data['title']} (link auf stuttgart.de)</a></p>"
 
     event_html += "</div>"
-
     return event_html
 
 
@@ -326,15 +387,15 @@ def main():
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info(f"Starting scraping script. ##############")
-    rss_name = "buehne_veranstaltungen.rss"
-    rss_title = "Bühne - Stuttgart"
-    rss_category = 79078
-    generate_rss_feed(rss_name, rss_title, rss_category)
+    # rss_name = "buehne_veranstaltungen.rss"
+    # rss_title = "Bühne - Stuttgart"
+    # rss_category = 79078
+    # generate_rss_feed(rss_name, rss_title, rss_category)
 
-    rss_name = "philo_veranstaltungen.rss"
-    rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
-    rss_category = 77317
-    generate_rss_feed(rss_name, rss_title, rss_category)
+    # rss_name = "philo_veranstaltungen.rss"
+    # rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
+    # rss_category = 77317
+    # generate_rss_feed(rss_name, rss_title, rss_category)
 
     rss_name = "musik_veranstaltungen.rss"
     rss_title = "Musik - Stuttgart"
