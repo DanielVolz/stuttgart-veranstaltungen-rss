@@ -1,5 +1,4 @@
 import datetime
-import html
 import json
 import locale
 import logging
@@ -9,14 +8,15 @@ import subprocess
 import urllib.parse
 import xml.etree.ElementTree as ET
 
+from email.utils import formatdate
+
 import ics
 import jinja2
 import pytz
 import requests
 
 from bs4 import BeautifulSoup
-from datetime import datetime as dt
-from email.utils import formatdate
+
 
 # Constants
 DEFAULT_IMAGE_URL = "https://www.stuttgart.de/openGraph-200x200.png"
@@ -41,8 +41,14 @@ def count_events(xml_file):
         root = tree.getroot()
         event_count = len(root.findall(".//item"))
         return event_count
+    except ET.ParseError as parse_error:
+        # Handle parse errors
+        print(f"Error parsing XML: {parse_error}")
+    except IOError as io_error:
+        # Handle IO errors
+        print(f"IO Error occurred: {io_error}")
     except Exception as e:
-        # Handle any exception that may occur
+        # Handle any other unexpected exception
         print(f"An error occurred: {e}")
 
 
@@ -84,7 +90,8 @@ def execute_shell_command(command):
         logger.info(f"Command '{command}' executed successfully.")
     else:
         logger.error(
-            f"Command '{command}' encountered an error with return code {process.returncode}."
+            f"Command '{command}' encountered an error with return code"
+            f" {process.returncode}."
         )
 
 
@@ -127,8 +134,15 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
         logger.info("Updating Nextcloud News feeds.")
         for nextcloud_news_feed_id in nextcloud_news_feed_ids:
             commands = [
-                f"sudo docker exec --user www-data {nextcloud_container_name} php occ news:feed:read {nextcloud_user_id} {nextcloud_news_feed_id}",
-                f"sudo docker exec --user www-data {nextcloud_container_name} php occ news:updater:update-feed {nextcloud_user_id} {nextcloud_news_feed_id}",
+                (
+                    f"sudo docker exec --user www-data {nextcloud_container_name} php"
+                    f" occ news:feed:read {nextcloud_user_id} {nextcloud_news_feed_id}"
+                ),
+                (
+                    f"sudo docker exec --user www-data {nextcloud_container_name} php"
+                    " occ news:updater:update-feed"
+                    f" {nextcloud_user_id} {nextcloud_news_feed_id}"
+                ),
             ]
             for command in commands:
                 execute_shell_command(command)
@@ -179,7 +193,12 @@ def create_rss_element(rss_title):
     rss = ET.Element("rss", version="2.0")
     channel = ET.SubElement(rss, "channel")
     title = ET.SubElement(channel, "title")
+    copyright_stadt_stuttgart = ET.SubElement(channel, "copyright")
+    copyright_stadt_stuttgart.text = "Copyright 2023, Landeshauptstadt Stuttgart"
+    link = ET.SubElement(channel, "link")
+    link.text = "https://www.stuttgart.de/service/veranstaltungen.php"
     title.text = rss_title
+
     return rss, channel
 
 
@@ -211,7 +230,7 @@ def fetch_event_entries(url):
     """
 
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching event entries: {e}")
@@ -220,7 +239,10 @@ def fetch_event_entries(url):
     soup = BeautifulSoup(response.content, "html.parser")
     event_entries = soup.find_all(
         "article",
-        class_="SP-Teaser SP-Grid__full SP-Teaser--event SP-Teaser--hasLinks SP-Teaser--textual",
+        class_=(
+            "SP-Teaser SP-Grid__full SP-Teaser--event SP-Teaser--hasLinks"
+            " SP-Teaser--textual"
+        ),
     )
     return event_entries
 
@@ -261,7 +283,7 @@ def extract_event_info(event_entry, url):
     )
     ical_link = urllib.parse.urljoin(url, ical_link_element["href"])
     ical_link = urllib.parse.unquote(ical_link)
-    ical_response = requests.get(ical_link)
+    ical_response = requests.get(ical_link, timeout=10)
     ical_data = ical_response.text
     cal = ics.Calendar(ical_data)
     event = list(cal.events)[0]
@@ -342,7 +364,7 @@ def fetch_event_image_url(event_url):
         return DEFAULT_IMAGE_URL
 
     try:
-        webpage_response = requests.get(event_url)
+        webpage_response = requests.get(event_url, timeout=10)
         webpage_response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching event image URL: {e}")
@@ -394,7 +416,7 @@ def parse_entrance_fee(event_url):
         return None
 
     try:
-        webpage_response = requests.get(event_url)
+        webpage_response = requests.get(event_url, timeout=10)
         webpage_response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error parsing entrance fee: {e}")
@@ -425,10 +447,11 @@ def parse_extended_description(event_url):
     if not event_url:
         return None
 
-    webpage_response = requests.get(event_url)
+    webpage_response = requests.get(event_url, timeout=10)
     webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     extended_description_elements = webpage_soup.select(
-        ".SP-ArticleContent .SP-Text:not(.SP-Text--notice) .SP-Paragraph p:not(.SP-CallToAction__text .SP-Paragraph p)"
+        ".SP-ArticleContent .SP-Text:not(.SP-Text--notice) .SP-Paragraph"
+        " p:not(.SP-CallToAction__text .SP-Paragraph p)"
     )
 
     for element in extended_description_elements:
@@ -455,11 +478,14 @@ def parse_exhibition_hours(event_url):
     if not event_url:
         return None
 
-    webpage_response = requests.get(event_url)
+    webpage_response = requests.get(event_url, timeout=10)
     webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     exhibition_hours = webpage_soup.find(
         "section",
-        class_="SP-Text SP-Text--boxed SP-Grid__full--background SP-Grid__full--backgroundHighlighted",
+        class_=(
+            "SP-Text SP-Text--boxed SP-Grid__full--background"
+            " SP-Grid__full--backgroundHighlighted"
+        ),
     )
 
     if exhibition_hours:
@@ -539,7 +565,8 @@ def add_event_to_channel(event, event_html, channel):
         if existing_title == event_title and existing_pub_date == pub_date:
             event_exists = True
             logger.info(
-                f"Skipping adding event: Duplicate event: {event_title}, date: {pub_date}"
+                f"Skipping adding event: Duplicate event: {event_title}, date:"
+                f" {pub_date}"
             )
             break
 
@@ -570,9 +597,11 @@ def write_rss_to_file(rss, rss_name):
     script_directory = os.path.dirname(os.path.abspath(__file__))
     rss_path = os.path.join(script_directory, rss_name)
 
-    xml_data = ET.tostring(rss, encoding="unicode")  # Changed encoding to "unicode"
+    xml_data = ET.tostring(rss, encoding="utf-8")  # Changed encoding to "unicode"
     try:
-        with open(rss_path, "w") as f:  # Changed file mode to "w" (text mode)
+        with open(
+            rss_path, "w", encoding="utf-8"
+        ) as f:  # Changed file mode to "w" (text mode)
             f.write(xml_data)
     except IOError as e:
         logger.error(f"Failed to write XML data to {rss_path}: {e}")
@@ -647,7 +676,7 @@ def setup_logging():
 def main():
     destination_folder = "/home/pi/rss_feeds"
 
-    logger.info(f"Starting scraping script. ##############")
+    logger.info("Starting scraping script. ##############")
     # rss_name = "buehne_veranstaltungen.rss"
     # rss_title = "Bühne - Stuttgart"
     # rss_category = 79078
@@ -672,7 +701,7 @@ def main():
     # update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
     move_rss_log_files(destination_folder)
 
-    logger.info(f"Stopping scraping script. ##############")
+    logger.info("Stopping scraping script. ##############")
 
 
 if __name__ == "__main__":
