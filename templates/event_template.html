@@ -1,0 +1,32 @@
+<div>
+    <div style="display: flex;">
+        <div style="flex-shrink: 0; margin-right: 10px;">
+            <a href='{{ event_data.url }}' target='_blank' style='float: left; margin-right: 10px;'><img src='{{ image_url }}' alt='{{ event_data.title }}' style='max-width: 200px;'></a>
+        </div>
+        <div>
+            <p>{{ event_data.description }}</p>
+            <p><a href='{{ ical_link }}' target='_blank'>{{ event_data.start_time }} - {{ event_data.end_time }}, {{ event_data.date }} &#128197;</a></p>
+            {% if google_maps_link %}
+                <p><a href='{{ google_maps_link }}' target='_blank'>{{ event_data.location }}</a></p>
+            {% endif %}
+            {% if entrance_fee %}
+                <p>{{ entrance_fee }}</p>
+            {% endif %}
+            {% if extended_description %}
+                <p>{{ extended_description }}</p>
+            {% endif %}
+            {% if exhibition_hours_html %}
+                <br/>{{ exhibition_hours_html }}
+            {% endif %}
+            {% if event_data.tags_str %}
+                <p><strong>Tags:</strong> {{ event_data.tags_str }}</p>
+            {% endif %}
+            {% if event_data.kicker_addon %}
+                <p><strong>Zusätzliche Info:</strong> {{ event_data.kicker_addon }}</p>
+            {% endif %}
+            {% if event_data.url %}
+                <p><a href='{{ event_data.url }}' target='_blank'>{{ event_data.title }} (link auf stuttgart.de)</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>

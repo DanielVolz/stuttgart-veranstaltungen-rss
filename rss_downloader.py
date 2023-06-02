@@ -1,22 +1,24 @@
-import requests
-from bs4 import BeautifulSoup
-import urllib.parse
-from datetime import datetime as dt
 import datetime
-from email.utils import formatdate
-import pytz
-import os
-import ics
+import html
+import json
 import locale
-import xml.etree.ElementTree as ET
+import logging
+import os
 import shutil
 import subprocess
-import json
-import logging
-import html
+import urllib.parse
+import xml.etree.ElementTree as ET
+
+import ics
+import jinja2
+import pytz
+import requests
+
+from bs4 import BeautifulSoup
+from datetime import datetime as dt
+from email.utils import formatdate
 
 # Constants
-GERMANY_TIMEZONE = "Europe/Berlin"
 DEFAULT_IMAGE_URL = "https://www.stuttgart.de/openGraph-200x200.png"
 
 
@@ -161,8 +163,6 @@ def move_rss_log_files(destination_folder):
 
     if not files_moved:
         logger.warning("No files to move.")
-
-
 
 
 def create_rss_element(rss_title):
@@ -494,43 +494,21 @@ def render_event_html(
     Returns:
         str: The rendered HTML content for the event.
     """
+    template_loader = jinja2.FileSystemLoader(searchpath="./templates")
+    template_env = jinja2.Environment(loader=template_loader)
+    template = template_env.get_template("event_template.html")
 
-    event_html = f"""
-    <div>
-        <div style="display: flex;">
-            <div style="flex-shrink: 0; margin-right: 10px;">
-                <a href='{event_data["url"]}' target='_blank' style='float: left; margin-right: 10px;'><img src='{image_url}' alt='{event_data["title"]}' style='max-width: 200px;'></a>
-            </div>
-            <div>
-                <p>{event_data["description"]}</p>
-                <p><a href='{ical_link}' target='_blank'>{event_data["start_time"]} - {event_data["end_time"]}, {event_data["date"]} &#128197;</a></p>"""
+    rendered_html = template.render(
+        event_data=event_data,
+        image_url=image_url,
+        google_maps_link=google_maps_link,
+        entrance_fee=entrance_fee,
+        extended_description=extended_description,
+        exhibition_hours_html=exhibition_hours_html,
+        ical_link=ical_link,
+    )
 
-    if google_maps_link:
-        event_html += f"<p><a href='{google_maps_link}' target='_blank'>{event_data['location']}</a></p>"
-
-    if entrance_fee:
-        event_html += f"<p>{entrance_fee}</p>"
-
-    if extended_description:
-        event_html += f"<p>{extended_description}</p>"
-
-    if exhibition_hours_html:
-        event_html += f"<br/>{exhibition_hours_html}"
-
-    if event_data["tags_str"]:
-        event_html += f"<p><strong>Tags:</strong> {event_data['tags_str']}</p>"
-
-    event_kicker_addon = event_data.get("kicker_addon", None)
-    if event_kicker_addon:
-        event_html += (
-            f"<p><strong>Zusätzliche Info:</strong> {{event_kicker_addon}}</p>"
-        )
-
-    if event_data["url"]:
-        event_html += f"<p><a href='{event_data['url']}' target='_blank'>{event_data['title']} (link auf stuttgart.de)</a></p>"
-
-    event_html += "</div>"
-    return event_html
+    return rendered_html
 
 
 def add_event_to_channel(event, event_html, channel):
@@ -571,7 +549,7 @@ def add_event_to_channel(event, event_html, channel):
     # Add the event to the XML channel
     item = ET.SubElement(channel, "item")
     ET.SubElement(item, "title").text = event_title
-    ET.SubElement(item, "description").text = html.unescape(event_html)
+    ET.SubElement(item, "description").text = event_html
     ET.SubElement(item, "link").text = event.url
     ET.SubElement(item, "pubDate").text = pub_date
     logger.info(f"Added to xml file: {event_title}, date: {pub_date}")
@@ -592,9 +570,9 @@ def write_rss_to_file(rss, rss_name):
     script_directory = os.path.dirname(os.path.abspath(__file__))
     rss_path = os.path.join(script_directory, rss_name)
 
-    xml_data = ET.tostring(rss, encoding="utf-8")
+    xml_data = ET.tostring(rss, encoding="unicode")  # Changed encoding to "unicode"
     try:
-        with open(rss_path, "wb") as f:
+        with open(rss_path, "w") as f:  # Changed file mode to "w" (text mode)
             f.write(xml_data)
     except IOError as e:
         logger.error(f"Failed to write XML data to {rss_path}: {e}")
@@ -691,7 +669,7 @@ def main():
     rss_tld = "https://rss.danielvolz.org"
     nextcloud_container_name = "nextcloud-aio-nextcloud"
 
-    update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
+    # update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
     move_rss_log_files(destination_folder)
 
     logger.info(f"Stopping scraping script. ##############")
