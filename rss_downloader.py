@@ -117,7 +117,7 @@ def fetch_event_entries(url):
 def process_event_entry(event_entry, url, channel):
     ical_link, event = extract_event_info(event_entry, url)
     event_html = build_event_html(event, ical_link)
-    add_event_to_channel(event, event_html, ical_link, channel)
+    add_event_to_channel(event, event_html, channel)
 
 
 def extract_event_info(event_entry, url):
@@ -238,7 +238,7 @@ def build_event_html(event, ical_link):
     return event_html
 
 
-def add_event_to_channel(event, event_html, ical_link, channel):
+def add_event_to_channel(event, event_html, channel):
     event_title = event.name
     event_start = event.begin
     pub_date = formatdate(event_start.datetime.timestamp(), usegmt=True)
