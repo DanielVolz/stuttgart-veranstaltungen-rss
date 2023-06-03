@@ -13,7 +13,7 @@ import ics
 import jinja2
 import pytz
 import requests
-from bs4 import BeautifulSoupl
+from bs4 import BeautifulSoup
 
 # Constants
 DEFAULT_IMAGE_URL = "https://www.stuttgart.de/openGraph-200x200.png"

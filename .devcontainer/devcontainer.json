@@ -30,7 +30,7 @@
 		"vscode": {
 			"extensions": [
 				"ms-python.black-formatter",
-				"streetsidesoftware.code-spell-checker",
+				// "streetsidesoftware.code-spell-checker",
 				"ms-python.flake8",
 				"streetsidesoftware.code-spell-checker-german",
 				"github.vscode-github-actions",
@@ -39,13 +39,22 @@
 				"VisualStudioExptTeam.vscodeintellicode",
 				"ms-python.isort",
 				"yzhang.markdown-all-in-one",
-				"shd101wyy.markdown-preview-enhanced",
-				"christian-kohler.path-intellisense",
+				// "shd101wyy.markdown-preview-enhanced",
+				// "christian-kohler.path-intellisense",
 				"ms-python.vscode-pylance",
 				"ms-python.pylint",
 				"ms-python.python"
 			],
 			"settings": {
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+				"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+				"python.linting.flake8Enabled": true,
+				"python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+				"python.linting.mypyEnabled": false,
+				// "python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
+				"python.linting.pylintEnabled": true,
 				"editor.codeActionsOnSave": {
 					"source.organizeImports": true
 				},
@@ -58,22 +67,25 @@
 					"black"
 				],
 				"isort.check": true,
-				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
 				"python.formatting.blackArgs": [
 					"--line-length",
 					"88",
 					"--preview"
 				],
-				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 				"python.formatting.provider": "black",
 				"python.languageServer": "Pylance",
 				"python.linting.banditEnabled": true,
 				"python.linting.enabled": true,
-				"python.linting.flake8Enabled": true,
-				"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
 				"python.linting.lintOnSave": true,
-				"python.linting.pylintEnabled": true,
-				"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint"
+				"pylint.path": [
+					"/usr/local/py-utils/bin/pylint"
+				],
+				"pylint.args": [
+					"--good-names=('i','e','f','df','pd','Entity')",
+					"--disable=logging-fstring-interpolation"
+				],
+				"keyboard.layout": "com.apple.keylayout.German",
+				"cSpell.language": "en, de-DE"
 			}
 		}
 	},
