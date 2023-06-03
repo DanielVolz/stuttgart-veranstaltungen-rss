@@ -7,16 +7,13 @@ import shutil
 import subprocess
 import urllib.parse
 import xml.etree.ElementTree as ET
-
 from email.utils import formatdate
 
 import ics
 import jinja2
 import pytz
 import requests
-
 from bs4 import BeautifulSoup
-
 
 # Constants
 DEFAULT_IMAGE_URL = "https://www.stuttgart.de/openGraph-200x200.png"
@@ -47,9 +44,6 @@ def count_events(xml_file):
     except IOError as io_error:
         # Handle IO errors
         print(f"IO Error occurred: {io_error}")
-    except Exception as e:
-        # Handle any other unexpected exception
-        print(f"An error occurred: {e}")
 
 
 def get_running_containers(container_name):
@@ -598,7 +592,7 @@ def write_rss_to_file(rss, rss_name):
     rss_path = os.path.join(script_directory, rss_name)
 
     xml_data = ET.tostring(rss, encoding="utf-8")  # Changed encoding to "unicode"
-    
+
     try:
         with open(rss_path, "w", encoding="utf-8") as f:
             f.write(xml_data.decode("utf-8"))  # Decode the bytes using UTF-8
@@ -667,9 +661,9 @@ def setup_logging():
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.FileHandler(log_file_path), logging.StreamHandler()],
     )
-    logger = logging.getLogger(__name__)
+    log = logging.getLogger(__name__)
 
-    return logger
+    return log
 
 
 def main():
