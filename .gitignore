@@ -174,4 +174,3 @@ cython_debug/
 .wolf*
 cspell.json
 *.code-workspace
-.vscode/settings.json
