@@ -1,14 +1,17 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/debian
 {
-	"name": "Debian",
+	"name": "Python 3.9",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.9",
 	"features": {
-		"ghcr.io/devcontainers/features/python:1": {
-			"installTools": true,
-			"version": "3.9"
-		},
+		// "ghcr.io/devcontainers/features/common-utils:2": {
+		// 	"installZsh": "true",
+		// 	"username": "vscode",
+		// 	"userUid": "1001",
+		// 	"userGid": "1001",
+		// 	"upgradePackages": "true"
+		// },
 		"ghcr.io/devcontainers-contrib/features/bandit:2": {
 			"version": "latest"
 		},
@@ -17,15 +20,67 @@
 		},
 		"ghcr.io/devcontainers-contrib/features/flake8:2": {
 			"version": "latest",
-			"plugins": "flake8-black flake8-isort flake8-print flake8-bandit flake8-pylint flake8-builtins flake8-spellcheck flake8-pytest-style flake8-django flake8-fastapi"
+			"plugins": "flake8-black flake8-isort flake8-print flake8-bandit flake8-pylint flake8-builtins flake8-spellcheck flake8-pytest-style"
+		},
+		"ghcr.io/devcontainers-contrib/features/pylint:2": {
+			"version": "latest"
 		}
-	}
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.black-formatter",
+				"streetsidesoftware.code-spell-checker",
+				"ms-python.flake8",
+				"streetsidesoftware.code-spell-checker-german",
+				"github.vscode-github-actions",
+				"codezombiech.gitignore",
+				"eamodio.gitlens",
+				"VisualStudioExptTeam.vscodeintellicode",
+				"ms-python.isort",
+				"yzhang.markdown-all-in-one",
+				"shd101wyy.markdown-preview-enhanced",
+				"christian-kohler.path-intellisense",
+				"ms-python.vscode-pylance",
+				"ms-python.pylint",
+				"ms-python.python"
+			],
+			"settings": {
+				"editor.codeActionsOnSave": {
+					"source.organizeImports": true
+				},
+				"editor.formatOnSave": true,
+				"flake8.args": [
+					"--max-line-length=100"
+				],
+				"isort.args": [
+					"--profile",
+					"black"
+				],
+				"isort.check": true,
+				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+				"python.formatting.blackArgs": [
+					"--line-length",
+					"88",
+					"--preview"
+				],
+				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+				"python.formatting.provider": "black",
+				"python.languageServer": "Pylance",
+				"python.linting.banditEnabled": true,
+				"python.linting.enabled": true,
+				"python.linting.flake8Enabled": true,
+				"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+				"python.linting.lintOnSave": true,
+				"python.linting.pylintEnabled": true,
+				"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint"
+			}
+		}
+	},
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "pip3 install --user -r requirements.txt",
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
-	// Configure tool-specific properties.
-	// "customizations": {},
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	"remoteUser": "vscode"
 }
