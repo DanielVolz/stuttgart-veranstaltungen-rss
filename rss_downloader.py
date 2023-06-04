@@ -41,10 +41,10 @@ def count_events(xml_file):
         return event_count
     except ET.ParseError as parse_error:
         # Handle parse errors
-        print(f"Error parsing XML: {parse_error}")
+        logger.error(f"Error parsing XML: {parse_error}")
     except IOError as io_error:
         # Handle IO errors
-        print(f"IO Error occurred: {io_error}")
+        logger.error(f"IO Error occurred: {io_error}")
 
 
 def get_running_containers(container_name):
@@ -57,9 +57,6 @@ def get_running_containers(container_name):
     Returns:
         bool: True if the specified container is running, False otherwise.
     """
-
-    # command = f"docker ps --filter name={container_name} --format '{{{{.Names}}}}'"
-    # output = subprocess.check_output(command, shell=True, text=True)
 
     command = (
         f"docker ps --filter name={shlex.quote(container_name)} --format"
@@ -84,17 +81,6 @@ def execute_shell_command(command):
     Raises:
         CalledProcessError: If the shell command returns a non-zero exit status.
     """
-
-    # process = subprocess.Popen(command, shell=True)
-    # process.communicate()
-
-    # if process.returncode == 0:
-    #     logger.info(f"Command '{command}' executed successfully.")
-    # else:
-    #     logger.error(
-    #         f"Command '{command}' encountered an error with return code"
-    #         f" {process.returncode}."
-    #     )
 
     process = subprocess.Popen(shlex.split(command))
     process.communicate()
@@ -685,8 +671,12 @@ def setup_logging():
 
 
 def main():
-    """The main function of the script."""
-    # TODO: write detailed main documentation
+    """
+    The main function of the script.
+
+    Returns:
+        None
+    """
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info("Starting scraping script. ##############")
