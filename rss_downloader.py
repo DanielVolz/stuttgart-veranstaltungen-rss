@@ -86,19 +86,22 @@ def execute_shell_command(command):
         None
 
     Raises:
-        CalledProcessError: If the shell command returns a non-zero exit status.
+        subprocess.CalledProcessError: If the shell command returns a non-zero exit status.
     """
 
-    process = subprocess.Popen(shlex.split(command))
-    process.communicate()
+    with subprocess.Popen(shlex.split(command)) as process:
+        process.communicate()
 
-    if process.returncode == 0:
-        logger.info(f"Command '{command}' executed successfully.")
-    else:
-        logger.error(
-            f"Command '{command}' encountered an error with return code"
-            f" {process.returncode}."
-        )
+        if process.returncode == 0:
+            logger.info(f"Command '{command}' executed successfully.")
+        else:
+            raise subprocess.CalledProcessError(
+                process.returncode,
+                (
+                    f"Command '{command}' encountered an error with return code"
+                    f" {process.returncode}."
+                ),
+            )
 
 
 def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_name):
