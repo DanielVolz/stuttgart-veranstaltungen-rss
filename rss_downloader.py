@@ -725,7 +725,8 @@ def main():
     Returns:
         None
     """
-    destination_folder = settings.destination_folder
+    # settings.load_file(path="./settings.toml")
+    destination_folder = settings.DESTINATION_FOLDER
     nextcloud_user_id = settings.nextcloud_user_id
     rss_tld = settings.rss_tld
     nextcloud_container_name = settings.nextcloud_container_name
