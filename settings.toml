@@ -1,0 +1,21 @@
+[default]
+default_event_img_url = "https://www.stuttgart.de/openGraph-200x200.png"
+DESTINATION_FOLDER = "../"
+nextcloud_user_id = "danielvolz"
+rss_tld = "https://rss.danielvolz.org"
+nextcloud_container_name = "nextcloud-aio-nextcloud"
+
+[[rss_feeds]]
+name = "buehne_veranstaltungen.rss"
+title = "Bühne - Stuttgart"
+category = 79078
+[[rss_feeds]]
+name = "philo_veranstaltungen.rss"
+title = "Literatur, Philosophie und Geschichte - Stuttgart"
+category = 77317
+[[rss_feeds]]
+name = "musik_veranstaltungen.rss"
+title = "Musik - Stuttgart"
+category = 79091
+
+[testing]
