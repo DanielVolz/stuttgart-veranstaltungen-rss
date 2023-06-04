@@ -16,7 +16,7 @@
                 <p>{{ extended_description }}</p>
             {% endif %}
             {% if exhibition_hours_html %}
-                <br/>{{ exhibition_hours_html }}
+                <br/><p>{{ exhibition_hours_html | safe }}</p>
             {% endif %}
             {% if event_data.tags_str %}
                 <p><strong>Tags:</strong> {{ event_data.tags_str }}</p>
