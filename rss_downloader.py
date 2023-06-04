@@ -1,6 +1,5 @@
 import datetime
 import json
-import locale
 import logging
 import os
 import shlex
@@ -394,8 +393,8 @@ def fetch_event_image_url(event_url):
     Returns:
         str: The fetched image URL or the default image URL if fetching fails.
     """
-    default_event_img_url = settings.get("default_event_img_url")
-    if not event_url or not bool(default_event_img_url):
+    default_event_img_url = settings.default.default_event_img_url
+    if not event_url:
         return
 
     try:
@@ -414,10 +413,16 @@ def fetch_event_image_url(event_url):
             image_url = urllib.parse.urljoin(event_url, img_tag.get("src"))
             php_file_name = os.path.basename(event_url)
             php_file_name = os.path.splitext(php_file_name)[0]
+
             if php_file_name in image_url:
                 return image_url
-
-    return
+            if default_event_img_url:
+                # Check if default_event_img_url is a valid URL
+                if urllib.parse.urlparse(default_event_img_url).scheme:
+                    return default_event_img_url
+                logger.error(f"Invalid default_event_img_url: {default_event_img_url}")
+                return
+            return
 
 
 def generate_google_maps_link(location):
@@ -738,15 +743,15 @@ def main():
     """
     logger.info("Starting scraping script. ##############")
 
-    destination_folder = settings.default.destination_folder
-    nextcloud_user_id = settings.default.nextcloud_user_id
-    rss_tld = settings.default.rss_tld
-    nextcloud_container_name = settings.default.nextcloud_container_name
+    # destination_folder = settings.default.destination_folder
+    # nextcloud_user_id = settings.default.nextcloud_user_id
+    # rss_tld = settings.default.rss_tld
+    # nextcloud_container_name = settings.default.nextcloud_container_name
 
     rss_feeds = settings.get("rss_feeds")
-    # generate_rss_feed(rss_feeds)
-    move_rss_files(destination_folder)
-    update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
+    generate_rss_feed(rss_feeds)
+    # move_rss_files(destination_folder)
+    # update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
 
     logger.info("Stopping scraping script. ##############")
 
