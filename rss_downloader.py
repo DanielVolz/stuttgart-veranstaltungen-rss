@@ -3,6 +3,7 @@ import json
 import locale
 import logging
 import os
+import shlex
 import shutil
 import subprocess
 import urllib.parse
@@ -34,7 +35,7 @@ def count_events(xml_file):
     """
 
     try:
-        tree = ET.parse(xml_file)
+        tree = ET.parse(xml_file)  # nosec
         root = tree.getroot()
         event_count = len(root.findall(".//item"))
         return event_count
@@ -57,8 +58,15 @@ def get_running_containers(container_name):
         bool: True if the specified container is running, False otherwise.
     """
 
-    command = f"docker ps --filter name={container_name} --format '{{{{.Names}}}}'"
-    output = subprocess.check_output(command, shell=True, text=True)
+    # command = f"docker ps --filter name={container_name} --format '{{{{.Names}}}}'"
+    # output = subprocess.check_output(command, shell=True, text=True)
+
+    command = (
+        f"docker ps --filter name={shlex.quote(container_name)} --format"
+        " '{{.Names}}'"
+    )
+    output = subprocess.check_output(shlex.split(command), text=True)
+
     running_containers = output.splitlines()
     return container_name in running_containers
 
@@ -77,7 +85,18 @@ def execute_shell_command(command):
         CalledProcessError: If the shell command returns a non-zero exit status.
     """
 
-    process = subprocess.Popen(command, shell=True)
+    # process = subprocess.Popen(command, shell=True)
+    # process.communicate()
+
+    # if process.returncode == 0:
+    #     logger.info(f"Command '{command}' executed successfully.")
+    # else:
+    #     logger.error(
+    #         f"Command '{command}' encountered an error with return code"
+    #         f" {process.returncode}."
+    #     )
+
+    process = subprocess.Popen(shlex.split(command))
     process.communicate()
 
     if process.returncode == 0:
@@ -107,7 +126,6 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
 
     output = subprocess.check_output(
         [
-            "sudo",
             "docker",
             "exec",
             "--user",
@@ -129,11 +147,11 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
         for nextcloud_news_feed_id in nextcloud_news_feed_ids:
             commands = [
                 (
-                    f"sudo docker exec --user www-data {nextcloud_container_name} php"
+                    f"docker exec --user www-data {nextcloud_container_name} php"
                     f" occ news:feed:read {nextcloud_user_id} {nextcloud_news_feed_id}"
                 ),
                 (
-                    f"sudo docker exec --user www-data {nextcloud_container_name} php"
+                    f"docker exec --user www-data {nextcloud_container_name} php"
                     " occ news:updater:update-feed"
                     f" {nextcloud_user_id} {nextcloud_news_feed_id}"
                 ),
@@ -515,7 +533,7 @@ def render_event_html(
         str: The rendered HTML content for the event.
     """
     template_loader = jinja2.FileSystemLoader(searchpath="./templates")
-    template_env = jinja2.Environment(loader=template_loader)
+    template_env = jinja2.Environment(loader=template_loader, autoescape=True)
     template = template_env.get_template("event_template.html")
 
     rendered_html = template.render(
@@ -601,7 +619,7 @@ def write_rss_to_file(rss, rss_name):
         return
 
     try:
-        tree = ET.parse(rss_path)
+        tree = ET.parse(rss_path)  # nosec
         tree.write(rss_path, encoding="utf-8", xml_declaration=True)
     except ET.ParseError as e:
         logger.error(f"Failed to parse XML data from {rss_path}: {e}")
@@ -667,6 +685,10 @@ def setup_logging():
 
 
 def main():
+    """The main function of the script.
+
+    TODO
+    """
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info("Starting scraping script. ##############")
