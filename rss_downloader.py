@@ -685,10 +685,8 @@ def setup_logging():
 
 
 def main():
-    """The main function of the script.
-
-    TODO
-    """
+    """The main function of the script."""
+    # TODO: write detailed main documentation
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info("Starting scraping script. ##############")
