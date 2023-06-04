@@ -1,6 +1,6 @@
-[development]
+[default]
 default_event_img_url = "https://www.stuttgart.de/openGraph-200x200.png"
-DESTINATION_FOLDER = "/home/pi/rss_feeds"
+DESTINATION_FOLDER = "../"
 nextcloud_user_id = "danielvolz"
 rss_tld = "https://rss.danielvolz.org"
 nextcloud_container_name = "nextcloud-aio-nextcloud"

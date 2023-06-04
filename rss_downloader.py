@@ -61,7 +61,7 @@ def get_running_containers(container_name):
     try:
         # Check if Docker is installed
         subprocess.run(["docker", "--version"], check=True, capture_output=True)
-    except subprocess.CalledProcessError:
+    except FileNotFoundError:
         logger.error("Docker is not installed on this host. Exiting.")
         sys.exit(1)
 
@@ -132,6 +132,8 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
         logger.error("nextcloud_container_name is not set or empty.")
         return
 
+    container = get_running_containers(nextcloud_container_name)
+
     output = subprocess.check_output(
         [
             "docker",
@@ -150,7 +152,7 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
         entry["id"] for entry in parsed_data if entry["url"].startswith(tld_rss_feed)
     ]
 
-    if get_running_containers(nextcloud_container_name):
+    if container:
         logger.info("Updating Nextcloud News feeds.")
         for nextcloud_news_feed_id in nextcloud_news_feed_ids:
             commands = [
@@ -170,7 +172,7 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
         logger.error(f"Container '{nextcloud_container_name}' is not running.")
 
 
-def move_rss_log_files(destination_folder):
+def move_rss_files(destination_folder):
     """
     Move RSS and log files to a destination folder.
 
@@ -185,22 +187,31 @@ def move_rss_log_files(destination_folder):
         logger.error("destination_folder is not set or empty.")
         return
 
-    script_directory = os.path.dirname(os.path.abspath(__file__))
-    source_folder = script_directory
+    project_folder = os.path.dirname(os.path.abspath(__file__))
 
-    file_list = os.listdir(source_folder)
-    files_moved = False  # Variable to track if any files were moved
+    # Check if destination_folder exists and is a directory
+    try:
+        os.listdir(destination_folder)
+    except FileNotFoundError:
+        logger.error(f"destination_folder does not exist: {destination_folder}")
+        sys.exit(1)
+    except NotADirectoryError:
+        logger.error(f"destination_folder is not a directory: {destination_folder}")
+        sys.exit(1)
+
+    file_list = os.listdir(project_folder)
+    files_moved = False
 
     for file_name in file_list:
-        if file_name.endswith((".rss", ".log")):
-            source_path = os.path.join(source_folder, file_name)
+        if file_name.endswith(".rss"):
+            source_path = os.path.join(project_folder, file_name)
             destination_path = os.path.join(destination_folder, file_name)
             shutil.move(source_path, destination_path)
             logger.info("Moved file: %s", file_name)
-            files_moved = True  # Set the flag to indicate files were moved
+            files_moved = True
 
     if not files_moved:
-        logger.warning("No files to move.")
+        logger.warning("No rss files to move to destination.")
 
 
 def create_rss_element(rss_title):
@@ -383,8 +394,8 @@ def fetch_event_image_url(event_url):
     Returns:
         str: The fetched image URL or the default image URL if fetching fails.
     """
-    default_event_img_url = settings.default_event_img_url
-    if not event_url or not bool(default_event_img_url.strip()):
+    default_event_img_url = settings.get("default_event_img_url")
+    if not event_url or not bool(default_event_img_url):
         return
 
     try:
@@ -665,7 +676,7 @@ def generate_rss_feed(rss_feeds):
         sys.exit(1)
 
     logger.info("Start generating RSS feeds.")
-    locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
+    # locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
 
     for rss_feed in rss_feeds:
         rss_name = rss_feed.get("name")
@@ -725,18 +736,16 @@ def main():
     Returns:
         None
     """
-    # settings.load_file(path="./settings.toml")
-    destination_folder = settings.DESTINATION_FOLDER
-    nextcloud_user_id = settings.nextcloud_user_id
-    rss_tld = settings.rss_tld
-    nextcloud_container_name = settings.nextcloud_container_name
-
     logger.info("Starting scraping script. ##############")
-    rss_feeds = settings.rss_feeds
-    generate_rss_feed(rss_feeds)
 
-    logger.info("RSS feed generation completed.")
-    move_rss_log_files(destination_folder)
+    destination_folder = settings.default.destination_folder
+    nextcloud_user_id = settings.default.nextcloud_user_id
+    rss_tld = settings.default.rss_tld
+    nextcloud_container_name = settings.default.nextcloud_container_name
+
+    rss_feeds = settings.get("rss_feeds")
+    # generate_rss_feed(rss_feeds)
+    move_rss_files(destination_folder)
     update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
 
     logger.info("Stopping scraping script. ##############")
