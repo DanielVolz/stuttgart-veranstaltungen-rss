@@ -615,37 +615,46 @@ def write_rss_to_file(rss, rss_name):
     logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
 
 
-def generate_rss_feed(rss_name, rss_title, rss_category):
+def generate_rss_feed(rss_feeds):
     """
-    Generate an RSS feed for a given category.
+    Generate RSS feeds for multiple categories.
 
     Parameters:
-        - rss_name (str): The name of the RSS feed file.
-        - rss_title (str): The title of the RSS feed.
-        - rss_category (str): The category of the RSS feed.
+        - rss_feeds (list[dict]): A list of dictionaries representing RSS feeds.
+            Each dictionary should contain the following keys:
+            - 'name': The name of the RSS feed file.
+            - 'title': The title of the RSS feed.
+            - 'category': The category of the RSS feed.
 
     Returns:
         None
     """
 
-    logger.info(
-        f"Start scraping the RSS category {rss_title} in to the file: {rss_name}."
-    )
+    logger.info("Start generating RSS feeds.")
     locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
 
-    rss, channel = create_rss_element(rss_title)
-    date_list = create_date_list()
+    for rss_feed in rss_feeds:
+        rss_name = rss_feed["name"]
+        rss_title = rss_feed["title"]
+        rss_category = rss_feed["category"]
 
-    for date in date_list:
-        date_str = date.strftime("%Y-%m-%d")
-        url = f"https://www.stuttgart.de/service/veranstaltungen.php?form=eventSearch-1.form&sp:dateFrom[]={date_str}&sp:dateTo[]={date_str}&sp:categories[77306][]={rss_category}&action=submit"
+        logger.info(
+            f"Start scraping the RSS category {rss_title} into the file: {rss_name}."
+        )
 
-        event_entries = fetch_event_entries(url)
+        rss, channel = create_rss_element(rss_title)
+        date_list = create_date_list()
 
-        for event_entry in event_entries:
-            process_event_entry(event_entry, url, channel)
+        for date in date_list:
+            date_str = date.strftime("%Y-%m-%d")
+            url = f"https://www.stuttgart.de/service/veranstaltungen.php?form=eventSearch-1.form&sp:dateFrom[]={date_str}&sp:dateTo[]={date_str}&sp:categories[77306][]={rss_category}&action=submit"
 
-    write_rss_to_file(rss, rss_name)
+            event_entries = fetch_event_entries(url)
+
+            for event_entry in event_entries:
+                process_event_entry(event_entry, url, channel)
+
+        write_rss_to_file(rss, rss_name)
 
 
 def setup_logging():
@@ -680,20 +689,26 @@ def main():
     destination_folder = "/home/pi/rss_feeds"
 
     logger.info("Starting scraping script. ##############")
-    rss_name = "buehne_veranstaltungen.rss"
-    rss_title = "Bühne - Stuttgart"
-    rss_category = 79078
-    generate_rss_feed(rss_name, rss_title, rss_category)
 
-    rss_name = "philo_veranstaltungen.rss"
-    rss_title = "Literatur, Philosophie und Geschichte - Stuttgart"
-    rss_category = 77317
-    generate_rss_feed(rss_name, rss_title, rss_category)
+    rss_feeds = [
+        {
+            "name": "buehne_veranstaltungen.rss",
+            "title": "Bühne - Stuttgart",
+            "category": 79078,
+        },
+        {
+            "name": "philo_veranstaltungen.rss",
+            "title": "Literatur, Philosophie und Geschichte - Stuttgart",
+            "category": 77317,
+        },
+        {
+            "name": "musik_veranstaltungen.rss",
+            "title": "Musik - Stuttgart",
+            "category": 79091,
+        },
+    ]
 
-    rss_name = "musik_veranstaltungen.rss"
-    rss_title = "Musik - Stuttgart"
-    rss_category = 79091
-    generate_rss_feed(rss_name, rss_title, rss_category)
+    generate_rss_feed(rss_feeds)
 
     logger.info("RSS feed generation completed.")
 
