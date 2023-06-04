@@ -394,6 +394,7 @@ def fetch_event_image_url(event_url):
         str: The fetched image URL or the default image URL if fetching fails.
     """
     default_event_img_url = settings.default.default_event_img_url
+
     if not event_url:
         return
 
@@ -402,7 +403,7 @@ def fetch_event_image_url(event_url):
         webpage_response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching event image URL: {e}")
-        return
+        return None
 
     webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     picture_tag = webpage_soup.select_one("picture")
@@ -416,13 +417,14 @@ def fetch_event_image_url(event_url):
 
             if php_file_name in image_url:
                 return image_url
-            if default_event_img_url:
-                # Check if default_event_img_url is a valid URL
-                if urllib.parse.urlparse(default_event_img_url).scheme:
-                    return default_event_img_url
-                logger.error(f"Invalid default_event_img_url: {default_event_img_url}")
-                return
-            return
+
+    if default_event_img_url:
+        # Check if default_event_img_url is a valid URL
+        if urllib.parse.urlparse(default_event_img_url).scheme:
+            return default_event_img_url
+        logger.error(f"Invalid default_event_img_url: {default_event_img_url}")
+        return default_event_img_url
+    return None
 
 
 def generate_google_maps_link(location):

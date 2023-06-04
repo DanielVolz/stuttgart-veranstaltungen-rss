@@ -1,6 +1,6 @@
 [default]
-# default_event_img_url = "https://www.stuttgart.de/openGraph-200x200.png"
-default_event_img_url = ""
+default_event_img_url = "https://www.stuttgart.de/openGraph-200x200.png"
+# default_event_img_url = ""
 DESTINATION_FOLDER = "../"
 nextcloud_user_id = "danielvolz"
 rss_tld = "https://rss.danielvolz.org"
