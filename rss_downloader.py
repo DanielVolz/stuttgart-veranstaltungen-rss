@@ -6,6 +6,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import urllib.parse
 import xml.etree.ElementTree as ET
 from email.utils import formatdate
@@ -16,8 +17,7 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 
-# Constants
-DEFAULT_IMAGE_URL = "https://www.stuttgart.de/openGraph-200x200.png"
+from config import settings
 
 
 def count_events(xml_file):
@@ -57,6 +57,13 @@ def get_running_containers(container_name):
     Returns:
         bool: True if the specified container is running, False otherwise.
     """
+
+    try:
+        # Check if Docker is installed
+        subprocess.run(["docker", "--version"], check=True, capture_output=True)
+    except subprocess.CalledProcessError:
+        logger.error("Docker is not installed on this host. Exiting.")
+        sys.exit(1)
 
     command = (
         f"docker ps --filter name={shlex.quote(container_name)} --format"
@@ -110,6 +117,18 @@ def update_nextcloud_news(nextcloud_user_id, tld_rss_feed, nextcloud_container_n
         Exception: If an error occurs during the update process or if the container is not running.
     """
 
+    if not nextcloud_user_id:
+        logger.error("nextcloud_user_id is not set or empty.")
+        return
+
+    if not tld_rss_feed:
+        logger.error("tld_rss_feed is not set or empty.")
+        return
+
+    if not nextcloud_container_name:
+        logger.error("nextcloud_container_name is not set or empty.")
+        return
+
     output = subprocess.check_output(
         [
             "docker",
@@ -158,6 +177,10 @@ def move_rss_log_files(destination_folder):
     Returns:
         None
     """
+
+    if not destination_folder:
+        logger.error("destination_folder is not set or empty.")
+        return
 
     script_directory = os.path.dirname(os.path.abspath(__file__))
     source_folder = script_directory
@@ -357,16 +380,16 @@ def fetch_event_image_url(event_url):
     Returns:
         str: The fetched image URL or the default image URL if fetching fails.
     """
-
-    if not event_url:
-        return DEFAULT_IMAGE_URL
+    default_event_img_url = settings.default_event_img_url
+    if not event_url or not bool(default_event_img_url.strip()):
+        return
 
     try:
         webpage_response = requests.get(event_url, timeout=10)
         webpage_response.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching event image URL: {e}")
-        return DEFAULT_IMAGE_URL
+        return
 
     webpage_soup = BeautifulSoup(webpage_response.content, "html.parser")
     picture_tag = webpage_soup.select_one("picture")
@@ -380,7 +403,7 @@ def fetch_event_image_url(event_url):
             if php_file_name in image_url:
                 return image_url
 
-    return DEFAULT_IMAGE_URL
+    return
 
 
 def generate_google_maps_link(location):
@@ -518,7 +541,11 @@ def render_event_html(
     Returns:
         str: The rendered HTML content for the event.
     """
-    template_loader = jinja2.FileSystemLoader(searchpath="./templates")
+    template_loader = jinja2.FileSystemLoader(
+        searchpath=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "./templates"
+        )
+    )
     template_env = jinja2.Environment(loader=template_loader, autoescape=True)
     template = template_env.get_template("event_template.html")
 
@@ -630,13 +657,23 @@ def generate_rss_feed(rss_feeds):
         None
     """
 
+    if not rss_feeds:
+        logger.error("rss_feeds parameter is not set or empty. Exiting.")
+        sys.exit(1)
+
     logger.info("Start generating RSS feeds.")
     locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
 
     for rss_feed in rss_feeds:
-        rss_name = rss_feed["name"]
-        rss_title = rss_feed["title"]
-        rss_category = rss_feed["category"]
+        rss_name = rss_feed.get("name")
+        rss_title = rss_feed.get("title")
+        rss_category = rss_feed.get("category")
+
+        if not rss_name or not rss_title or not rss_category:
+            logger.warning(
+                "One or more parameters in rss_feed are not set or empty. Skipping."
+            )
+            continue
 
         logger.info(
             f"Start scraping the RSS category {rss_title} into the file: {rss_name}."
@@ -665,7 +702,6 @@ def setup_logging():
         logging.Logger: The logger object for logging events.
     """
 
-    # Set up logging
     log_file = "rss_generator.log"
     log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), log_file)
     logging.basicConfig(
@@ -686,36 +722,16 @@ def main():
     Returns:
         None
     """
-    destination_folder = "/home/pi/rss_feeds"
+    destination_folder = settings.destination_folder
+    nextcloud_user_id = settings.nextcloud_user_id
+    rss_tld = settings.rss_tld
+    nextcloud_container_name = settings.nextcloud_container_name
 
     logger.info("Starting scraping script. ##############")
-
-    rss_feeds = [
-        {
-            "name": "buehne_veranstaltungen.rss",
-            "title": "Bühne - Stuttgart",
-            "category": 79078,
-        },
-        {
-            "name": "philo_veranstaltungen.rss",
-            "title": "Literatur, Philosophie und Geschichte - Stuttgart",
-            "category": 77317,
-        },
-        {
-            "name": "musik_veranstaltungen.rss",
-            "title": "Musik - Stuttgart",
-            "category": 79091,
-        },
-    ]
-
+    rss_feeds = settings.rss_feeds
     generate_rss_feed(rss_feeds)
 
     logger.info("RSS feed generation completed.")
-
-    nextcloud_user_id = "danielvolz"
-    rss_tld = "https://rss.danielvolz.org"
-    nextcloud_container_name = "nextcloud-aio-nextcloud"
-
     move_rss_log_files(destination_folder)
     update_nextcloud_news(nextcloud_user_id, rss_tld, nextcloud_container_name)
 
