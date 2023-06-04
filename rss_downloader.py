@@ -396,7 +396,7 @@ def fetch_event_image_url(event_url):
     default_event_img_url = settings.default.default_event_img_url
 
     if not event_url:
-        return
+        return None
 
     try:
         webpage_response = requests.get(event_url, timeout=10)
