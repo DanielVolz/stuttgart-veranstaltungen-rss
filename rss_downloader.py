@@ -652,11 +652,11 @@ def write_rss_to_file(rss, rss_name):
     script_directory = os.path.dirname(os.path.abspath(__file__))
     rss_path = os.path.join(script_directory, rss_name)
 
-    xml_data = ET.tostring(rss, encoding="utf-8")  # Changed encoding to "unicode"
+    xml_data = ET.tostring(rss, encoding="utf-8")
 
     try:
         with open(rss_path, "w", encoding="utf-8") as f:
-            f.write(xml_data.decode("utf-8"))  # Decode the bytes using UTF-8
+            f.write(xml_data.decode("utf-8"))
     except IOError as e:
         logger.error(f"Failed to write XML data to {rss_path}: {e}")
         return
@@ -692,7 +692,6 @@ def generate_rss_feed(rss_feeds):
         sys.exit(1)
 
     logger.info("Start generating RSS feeds.")
-    # locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
 
     for rss_feed in rss_feeds:
         rss_name = rss_feed.get("name")
