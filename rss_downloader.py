@@ -660,21 +660,14 @@ def write_rss_to_file(rss, rss_name):
     script_directory = os.path.dirname(os.path.abspath(__file__))
     rss_path = os.path.join(script_directory, rss_name)
 
-    xml_data = ET.tostring(rss, encoding="utf-8")
+    rss_data = ET.tostring(rss, encoding="utf-8")
 
     try:
         with open(rss_path, "w", encoding="utf-8") as f:
-            f.write(xml_data.decode("utf-8"))
+            f.write(rss_data.decode("utf-8"))
     except IOError as e:
-        logger.error(f"Failed to write XML data to {rss_path}: {e}")
+        logger.error(f"Failed to write rss data to {rss_path}: {e}")
         return
-
-    # try:
-    #     tree = ET.parse(rss_path)  # nosec
-    #     tree.write(rss_path, encoding="utf-8", xml_declaration=True)
-    # except ET.ParseError as e:
-    #     logger.error(f"Failed to parse XML data from {rss_path}: {e}")
-    #     return
 
     logger.info(f"{count_events(rss_path)} events added.")
     logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
