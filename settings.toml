@@ -1,7 +1,9 @@
 [default]
 default_event_img_url = "https://www.stuttgart.de/openGraph-200x200.png"
 # default_event_img_url = ""
-DESTINATION_FOLDER = "../"
+enable_move_rss = true
+destination_folder = "../"
+enable_update_nextcloud_news = true
 nextcloud_user_id = "danielvolz"
 rss_tld = "https://rss.danielvolz.org"
 nextcloud_container_name = "nextcloud-aio-nextcloud"
@@ -10,13 +12,13 @@ nextcloud_container_name = "nextcloud-aio-nextcloud"
 # name = "buehne_veranstaltungen.rss"
 # title = "Bühne - Stuttgart"
 # category = 79078
-[[rss_feeds]]
-name = "philo_veranstaltungen.rss"
-title = "Literatur, Philosophie und Geschichte - Stuttgart"
-category = 77317
 # [[rss_feeds]]
-# name = "musik_veranstaltungen.rss"
-# title = "Musik - Stuttgart"
-# category = 79091
+# name = "philo_veranstaltungen.rss"
+# title = "Literatur, Philosophie und Geschichte - Stuttgart"
+# category = 77317
+[[rss_feeds]]
+name = "musik_veranstaltungen.rss"
+title = "Musik - Stuttgart"
+category = 79091
 
 [testing]

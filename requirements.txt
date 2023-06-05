@@ -1,4 +1,5 @@
 beautifulsoup4==4.9.3
+dynaconf==3.1.12
 ics==0.7.2
 Jinja2==2.11.3
 pytz==2023.3

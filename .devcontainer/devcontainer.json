@@ -5,6 +5,9 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/python:0-3.9",
 	"features": {
+		"ghcr.io/devcontainers/features/sshd:1": {
+			"version": "latest"
+		}
 		// "ghcr.io/devcontainers/features/common-utils:2": {
 		// 	"installZsh": "true",
 		// 	"username": "vscode",
@@ -44,7 +47,8 @@
 				"ms-python.vscode-pylance",
 				"ms-python.pylint",
 				"ms-python.python",
-				"dbaeumer.vscode-eslint"
+				"dbaeumer.vscode-eslint",
+				"bungcip.better-toml"
 			],
 			"settings": {
 				"python.defaultInterpreterPath": "/usr/local/bin/python",
