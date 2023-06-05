@@ -732,7 +732,7 @@ def setup_logging():
         logging.Logger: The logger object for logging events.
     """
 
-    log_file = "rss_generator.log"
+    log_file = "rss_downloader.log"
     log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), log_file)
     logging.basicConfig(
         level=logging.INFO,
