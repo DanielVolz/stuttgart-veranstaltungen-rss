@@ -177,3 +177,10 @@ cspell.json
 
 # Ignore dynaconf secret files
 .secrets.*
+
+# Ignore rss files
+*rss
+
+# Ignore my settings file
+mysettings.toml
+settings.toml
