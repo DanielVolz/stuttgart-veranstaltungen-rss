@@ -307,7 +307,7 @@ def process_event_entry(
     and adding the event to a channel.
 
     Parameters:
-        - event_entry (BeautifulSoup.Tag): The HTML tag representing the event entry.
+        - event_entry (BeautifulSoup): The HTML tag representing the event entry.
         - url (str): The base URL of the event.
         - channel (xml.etree.ElementTree.Element): The XML element representing the channel.
 
@@ -327,7 +327,7 @@ def extract_event_info_from_ical(
     Extract event information from an event entry.
 
     Parameters:
-        - event_entry (BeautifulSoup.Tag): The HTML tag representing the event entry.
+        - event_entry (BeautifulSoup): The HTML tag representing the event entry.
         - url (str): The base URL of the event.
 
     Returns:
