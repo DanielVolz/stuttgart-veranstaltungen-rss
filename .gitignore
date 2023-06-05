@@ -179,8 +179,7 @@ cspell.json
 .secrets.*
 
 # Ignore rss files
-*rss
+*.rss
 
 # Ignore my settings file
-mysettings.toml
 settings.toml
