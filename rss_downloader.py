@@ -139,7 +139,7 @@ def update_nextcloud_news(
 
     container = get_running_containers(nextcloud_container_name)
 
-    output = subprocess.check_output(
+    feed_list = subprocess.check_output(
         [
             "docker",
             "exec",
@@ -152,10 +152,18 @@ def update_nextcloud_news(
             nextcloud_user_id,
         ]
     )
-    parsed_data = json.loads(output)
+    nextcloud_news_feeds = json.loads(feed_list)
     nextcloud_news_feed_ids = [
-        entry["id"] for entry in parsed_data if entry["url"].startswith(tld_rss_feed)
+        nextcloud_news_feed["id"]
+        for nextcloud_news_feed in nextcloud_news_feeds
+        if nextcloud_news_feed["url"].startswith(tld_rss_feed)
     ]
+
+    if not nextcloud_news_feed_ids:
+        logger.info(
+            f"No feeds starting with {tld_rss_feed} to update in nextcloud news."
+        )
+        return None
 
     if container:
         logger.info("Updating Nextcloud News feeds.")
@@ -304,12 +312,12 @@ def process_event_entry(event_entry, url, channel):
         None
     """
 
-    ical_link, event = extract_event_info(event_entry, url)
+    ical_link, event = extract_event_info_from_ical(event_entry, url)
     event_html = build_event_html(event, ical_link)
     add_event_to_channel(event, event_html, channel)
 
 
-def extract_event_info(event_entry, url):
+def extract_event_info_from_ical(event_entry, url):
     """
     Extract event information from an event entry.
 
@@ -661,12 +669,12 @@ def write_rss_to_file(rss, rss_name):
         logger.error(f"Failed to write XML data to {rss_path}: {e}")
         return
 
-    try:
-        tree = ET.parse(rss_path)  # nosec
-        tree.write(rss_path, encoding="utf-8", xml_declaration=True)
-    except ET.ParseError as e:
-        logger.error(f"Failed to parse XML data from {rss_path}: {e}")
-        return
+    # try:
+    #     tree = ET.parse(rss_path)  # nosec
+    #     tree.write(rss_path, encoding="utf-8", xml_declaration=True)
+    # except ET.ParseError as e:
+    #     logger.error(f"Failed to parse XML data from {rss_path}: {e}")
+    #     return
 
     logger.info(f"{count_events(rss_path)} events added.")
     logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
