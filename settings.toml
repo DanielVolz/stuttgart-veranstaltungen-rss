@@ -1,6 +1,5 @@
 [default]
 default_event_img_url = "https://www.stuttgart.de/openGraph-200x200.png"
-# default_event_img_url = ""
 enable_move_rss = true
 destination_folder = "../"
 enable_update_nextcloud_news = true
