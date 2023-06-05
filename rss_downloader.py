@@ -9,6 +9,7 @@ import sys
 import urllib.parse
 import xml.etree.ElementTree as ET
 from email.utils import formatdate
+from typing import Dict, List, Tuple
 
 import ics
 import jinja2
@@ -19,7 +20,7 @@ from bs4 import BeautifulSoup
 from config import settings
 
 
-def count_events(xml_file):
+def count_events(xml_file: str) -> int:
     """
     Count the number of events in an XML file.
 
@@ -30,7 +31,8 @@ def count_events(xml_file):
         int: The number of events found in the XML file.
 
     Raises:
-        Exception: If an error occurs during parsing or finding events.
+        ET.ParseError: If an error occurs during parsing the XML.
+        IOError: If an IO error occurs while accessing the XML file.
     """
 
     try:
@@ -41,12 +43,14 @@ def count_events(xml_file):
     except ET.ParseError as parse_error:
         # Handle parse errors
         logger.error(f"Error parsing XML: {parse_error}")
+        raise
     except IOError as io_error:
         # Handle IO errors
         logger.error(f"IO Error occurred: {io_error}")
+        raise
 
 
-def get_running_containers(container_name):
+def get_running_containers(container_name: str) -> bool:
     """
     Check if a Docker container is running.
 
@@ -56,7 +60,6 @@ def get_running_containers(container_name):
     Returns:
         bool: True if the specified container is running, False otherwise.
     """
-
     try:
         # Check if Docker is installed
         subprocess.run(["docker", "--version"], check=True, capture_output=True)
@@ -65,8 +68,7 @@ def get_running_containers(container_name):
         sys.exit(1)
 
     command = (
-        f"docker ps --filter name={shlex.quote(container_name)} --format"
-        " '{{.Names}}'"
+        f"docker ps --filter name={shlex.quote(container_name)} --format '{{.Names}}'"
     )
     output = subprocess.check_output(shlex.split(command), text=True)
 
@@ -74,7 +76,7 @@ def get_running_containers(container_name):
     return container_name in running_containers
 
 
-def execute_shell_command(command):
+def execute_shell_command(command: str) -> None:
     """
     Execute a shell command.
 
@@ -85,7 +87,7 @@ def execute_shell_command(command):
         None
 
     Raises:
-        subprocess.CalledProcessError: If the shell command returns a non-zero exit status.
+        None
     """
 
     with subprocess.Popen(shlex.split(command)) as process:
@@ -94,50 +96,49 @@ def execute_shell_command(command):
         if process.returncode == 0:
             logger.info(f"Command '{command}' executed successfully.")
         else:
-            raise subprocess.CalledProcessError(
-                process.returncode,
-                (
-                    f"Command '{command}' encountered an error with return code"
-                    f" {process.returncode}."
-                ),
-            )
+            logger.error(f"Command '{command}' failed to execute.")
 
 
 def update_nextcloud_news(
-    nextcloud_user_id, tld_rss_feed, nextcloud_container_name, enable_update
-):
+    nextcloud_user_id: str,
+    tld_rss_feed: str,
+    nextcloud_container_name: str,
+    enable_update: bool,
+) -> None:
     """
     Update Nextcloud News feeds for a specific user.
 
     Parameters:
-        nextcloud_user_id (str): The ID of the Nextcloud user.
-        tld_rss_feed (str): The top-level domain of the RSS feed.
-        nextcloud_container_name (str): The name of the Nextcloud Docker container.
+        - nextcloud_user_id (str): The ID of the Nextcloud user.
+        - tld_rss_feed (str): The top-level domain of the RSS feed.
+        - nextcloud_container_name (str): The name of the Nextcloud Docker container.
+        - enable_update (bool): Flag indicating whether the update is enabled.
 
     Returns:
         None
-
-    Raises:
-        Exception: If an error occurs during the update process or if the container is not running.
     """
 
     if not enable_update:
         logger.info("Update of Nextcloud News is disabled.")
-        return None
+        return
 
     if not nextcloud_user_id:
         logger.error("nextcloud_user_id is not set or empty.")
-        return None
+        return
 
     if not tld_rss_feed:
         logger.error("tld_rss_feed is not set or empty.")
-        return None
+        return
 
     if not nextcloud_container_name:
         logger.error("nextcloud_container_name is not set or empty.")
-        return None
+        return
 
     container = get_running_containers(nextcloud_container_name)
+
+    if not container:
+        logger.error(f"Container '{nextcloud_container_name}' is not running.")
+        return
 
     feed_list = subprocess.check_output(
         [
@@ -161,36 +162,34 @@ def update_nextcloud_news(
 
     if not nextcloud_news_feed_ids:
         logger.info(
-            f"No feeds starting with {tld_rss_feed} to update in nextcloud news."
+            f"No feeds starting with {tld_rss_feed} to update in Nextcloud News."
         )
-        return None
+        return
 
-    if container:
-        logger.info("Updating Nextcloud News feeds.")
-        for nextcloud_news_feed_id in nextcloud_news_feed_ids:
-            commands = [
-                (
-                    f"docker exec --user www-data {nextcloud_container_name} php"
-                    f" occ news:feed:read {nextcloud_user_id} {nextcloud_news_feed_id}"
-                ),
-                (
-                    f"docker exec --user www-data {nextcloud_container_name} php"
-                    " occ news:updater:update-feed"
-                    f" {nextcloud_user_id} {nextcloud_news_feed_id}"
-                ),
-            ]
-            for command in commands:
-                execute_shell_command(command)
-    else:
-        logger.error(f"Container '{nextcloud_container_name}' is not running.")
+    logger.info("Updating Nextcloud News feeds.")
+    for nextcloud_news_feed_id in nextcloud_news_feed_ids:
+        commands = [
+            (
+                f"docker exec --user www-data {nextcloud_container_name} php"
+                f" occ news:feed:read {nextcloud_user_id} {nextcloud_news_feed_id}"
+            ),
+            (
+                f"docker exec --user www-data {nextcloud_container_name} php"
+                " occ news:updater:update-feed"
+                f" {nextcloud_user_id} {nextcloud_news_feed_id}"
+            ),
+        ]
+        for command in commands:
+            execute_shell_command(command)
 
 
-def move_rss_files(destination_folder, enable_move):
+def move_rss_files(destination_folder: str, enable_move: bool) -> None:
     """
-    Move RSS and log files to a destination folder.
+    Move RSS files to a destination folder.
 
     Parameters:
-        destination_folder (str): The path to the destination folder.
+        - destination_folder: The path to the destination folder.
+        - enable_move: Indicates whether moving files is enabled or not.
 
     Returns:
         None
@@ -208,12 +207,14 @@ def move_rss_files(destination_folder, enable_move):
     # Check if destination_folder exists and is a directory
     try:
         os.listdir(destination_folder)
-    except FileNotFoundError:
-        logger.error(f"destination_folder does not exist: {destination_folder}")
-        sys.exit(1)
-    except NotADirectoryError:
-        logger.error(f"destination_folder is not a directory: {destination_folder}")
-        sys.exit(1)
+    except FileNotFoundError as exc:
+        raise ValueError(
+            f"destination_folder does not exist: {destination_folder}"
+        ) from exc
+    except NotADirectoryError as exc:
+        raise ValueError(
+            f"destination_folder is not a directory: {destination_folder}"
+        ) from exc
 
     file_list = os.listdir(project_folder)
     files_moved = False
@@ -230,12 +231,12 @@ def move_rss_files(destination_folder, enable_move):
         logger.warning("No rss file(s) to move to destination.")
 
 
-def create_rss_element(rss_title):
+def create_rss_element(rss_title: str) -> Tuple[ET.Element, ET.Element]:
     """
     Create an RSS element with a title.
 
     Parameters:
-        rss_title (str): The title of the RSS element.
+        rss_title: The title of the RSS element.
 
     Returns:
         Tuple: A tuple containing the root RSS element and the channel element.
@@ -244,8 +245,8 @@ def create_rss_element(rss_title):
     rss = ET.Element("rss", version="2.0")
     channel = ET.SubElement(rss, "channel")
     title = ET.SubElement(channel, "title")
-    copyright_stadt_stuttgart = ET.SubElement(channel, "copyright")
-    copyright_stadt_stuttgart.text = "Copyright 2023, Landeshauptstadt Stuttgart"
+    copyright_stuttgart = ET.SubElement(channel, "copyright")
+    copyright_stuttgart.text = "Copyright 2023, Landeshauptstadt Stuttgart"
     link = ET.SubElement(channel, "link")
     link.text = "https://www.stuttgart.de/service/veranstaltungen.php"
     title.text = rss_title
@@ -253,7 +254,7 @@ def create_rss_element(rss_title):
     return rss, channel
 
 
-def create_date_list():
+def create_date_list() -> List[datetime.date]:
     """
     Create a list of dates for the next 7 days.
 
@@ -266,7 +267,7 @@ def create_date_list():
     return date_list
 
 
-def fetch_event_entries(url):
+def fetch_event_entries(url: str) -> List[BeautifulSoup.Tag]:
     """
     Fetch event entries from a given URL.
 
@@ -274,7 +275,7 @@ def fetch_event_entries(url):
         url (str): The URL of the webpage to fetch event entries from.
 
     Returns:
-        List: A list of BeautifulSoup article objects representing event entries.
+        List: A list of BeautifulSoup Tag objects representing event entries.
 
     Raises:
         requests.exceptions.RequestException: If an error occurs while making the HTTP request.
@@ -298,7 +299,9 @@ def fetch_event_entries(url):
     return event_entries
 
 
-def process_event_entry(event_entry, url, channel):
+def process_event_entry(
+    event_entry: BeautifulSoup.Tag, url: str, channel: ET.Element
+) -> None:
     """
     Process an event entry by extracting event information, building event HTML,
     and adding the event to a channel.
@@ -306,7 +309,7 @@ def process_event_entry(event_entry, url, channel):
     Parameters:
         - event_entry (BeautifulSoup.Tag): The HTML tag representing the event entry.
         - url (str): The base URL of the event.
-        - channel (ElementTree.Element): The XML element representing the channel.
+        - channel (xml.etree.ElementTree.Element): The XML element representing the channel.
 
     Returns:
         None
@@ -317,7 +320,9 @@ def process_event_entry(event_entry, url, channel):
     add_event_to_channel(event, event_html, channel)
 
 
-def extract_event_info_from_ical(event_entry, url):
+def extract_event_info_from_ical(
+    event_entry: BeautifulSoup.Tag, url: str
+) -> Tuple[str, ics.Event]:
     """
     Extract event information from an event entry.
 
@@ -341,7 +346,7 @@ def extract_event_info_from_ical(event_entry, url):
     return ical_link, event
 
 
-def build_event_html(event, ical_link):
+def build_event_html(event: ics.Event, ical_link: str) -> str:
     """
     Build HTML content for an event.
 
@@ -372,12 +377,12 @@ def build_event_html(event, ical_link):
     return event_html
 
 
-def extract_event_data(event):
+def extract_event_data(event: ics.Event) -> dict:
     """
     Extract event data from an event object.
 
     Parameters:
-        - event (ics.Event): The event object.
+        event (ics.Event): The event object.
 
     Returns:
         dict: A dictionary containing the extracted event data.
@@ -400,12 +405,12 @@ def extract_event_data(event):
     }
 
 
-def fetch_event_image_url(event_url):
+def fetch_event_image_url(event_url: str) -> str:
     """
     Fetch the image URL for an event.
 
     Parameters:
-        - event_url (str): The URL of the event.
+        event_url (str): The URL of the event.
 
     Returns:
         str: The fetched image URL or the default image URL if fetching fails.
@@ -444,12 +449,12 @@ def fetch_event_image_url(event_url):
     return None
 
 
-def generate_google_maps_link(location):
+def generate_google_maps_link(location: str) -> str:
     """
     Generate a Google Maps link for a location.
 
     Parameters:
-        - location (str): The location string.
+        location (str): The location string.
 
     Returns:
         str: The generated Google Maps link.
@@ -460,12 +465,12 @@ def generate_google_maps_link(location):
     return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(location)}"
 
 
-def parse_entrance_fee(event_url):
+def parse_entrance_fee(event_url: str) -> str or None:
     """
     Parse the entrance fee for an event.
 
     Parameters:
-        - event_url (str): The URL of the event.
+        event_url (str): The URL of the event.
 
     Returns:
         str or None: The parsed entrance fee or None if parsing fails.
@@ -489,15 +494,13 @@ def parse_entrance_fee(event_url):
     if entrance_fee_element and entrance_fee_element.contents:
         return entrance_fee_element.contents[0].strip()
 
-    return None
 
-
-def parse_extended_description(event_url):
+def parse_extended_description(event_url: str) -> str or None:
     """
     Parse the extended description for an event.
 
     Parameters:
-        - event_url (str): The URL of the event.
+        event_url (str): The URL of the event.
 
     Returns:
         str or None: The parsed extended description or None if parsing fails.
@@ -523,12 +526,12 @@ def parse_extended_description(event_url):
     )
 
 
-def parse_exhibition_hours(event_url):
+def parse_exhibition_hours(event_url: str) -> str or None:
     """
     Parse the exhibition hours for an event.
 
     Parameters:
-        - event_url (str): The URL of the event.
+        event_url (str): The URL of the event.
 
     Returns:
         str or None: The parsed exhibition hours or None if parsing fails.
@@ -552,18 +555,16 @@ def parse_exhibition_hours(event_url):
         if exhibition_hours_div:
             return "".join(map(str, exhibition_hours_div.contents))
 
-    return None
-
 
 def render_event_html(
-    event_data,
-    image_url,
-    google_maps_link,
-    entrance_fee,
-    extended_description,
-    exhibition_hours_html,
-    ical_link,
-):
+    event_data: dict,
+    image_url: str,
+    google_maps_link: str,
+    entrance_fee: str or None,
+    extended_description: str or None,
+    exhibition_hours_html: str or None,
+    ical_link: str,
+) -> str:
     """
     Render the HTML content for an event.
 
@@ -600,7 +601,9 @@ def render_event_html(
     return rendered_html
 
 
-def add_event_to_channel(event, event_html, channel):
+def add_event_to_channel(
+    event: ics.Event, event_html: str, channel: ET.Element
+) -> None:
     """
     Add an event to the XML channel.
 
@@ -642,10 +645,10 @@ def add_event_to_channel(event, event_html, channel):
     ET.SubElement(item, "description").text = event_html
     ET.SubElement(item, "link").text = event.url
     ET.SubElement(item, "pubDate").text = pub_date
-    logger.info(f"Added to xml file: {event_title}, date: {pub_date}")
+    logger.info(f"Added to XML file: {event_title}, date: {pub_date}")
 
 
-def write_rss_to_file(rss, rss_name):
+def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
     """
     Write the RSS feed to a file.
 
@@ -666,19 +669,19 @@ def write_rss_to_file(rss, rss_name):
         with open(rss_path, "w", encoding="utf-8") as f:
             f.write(rss_data.decode("utf-8"))
     except IOError as e:
-        logger.error(f"Failed to write rss data to {rss_path}: {e}")
+        logger.error(f"Failed to write RSS data to {rss_path}: {e}")
         return
 
     logger.info(f"{count_events(rss_path)} events added.")
     logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
 
 
-def generate_rss_feed(rss_feeds):
+def generate_rss_feed(rss_feeds: List[Dict[str, str]]) -> None:
     """
     Generate RSS feeds for multiple categories.
 
     Parameters:
-        - rss_feeds (list[dict]): A list of dictionaries representing RSS feeds.
+        - rss_feeds (List[Dict[str, str]]): A list of dictionaries representing RSS feeds.
             Each dictionary should contain the following keys:
             - 'name': The name of the RSS feed file.
             - 'title': The title of the RSS feed.
@@ -724,7 +727,7 @@ def generate_rss_feed(rss_feeds):
         write_rss_to_file(rss, rss_name)
 
 
-def setup_logging():
+def setup_logging() -> logging.Logger:
     """
     Set up logging for the RSS generator.
 
@@ -745,7 +748,7 @@ def setup_logging():
     return log
 
 
-def main():
+def main() -> None:
     """
     The main function of the script.
 
