@@ -182,4 +182,4 @@ cspell.json
 *.rss
 
 # Ignore my settings file
-settings.toml
+*.toml
