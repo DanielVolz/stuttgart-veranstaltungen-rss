@@ -267,7 +267,7 @@ def create_date_list() -> List[datetime.date]:
     return date_list
 
 
-def fetch_event_entries(url: str) -> List[BeautifulSoup.Tag]:
+def fetch_event_entries(url: str) -> List[BeautifulSoup]:
     """
     Fetch event entries from a given URL.
 
@@ -300,7 +300,7 @@ def fetch_event_entries(url: str) -> List[BeautifulSoup.Tag]:
 
 
 def process_event_entry(
-    event_entry: BeautifulSoup.Tag, url: str, channel: ET.Element
+    event_entry: BeautifulSoup, url: str, channel: ET.Element
 ) -> None:
     """
     Process an event entry by extracting event information, building event HTML,
@@ -321,7 +321,7 @@ def process_event_entry(
 
 
 def extract_event_info_from_ical(
-    event_entry: BeautifulSoup.Tag, url: str
+    event_entry: BeautifulSoup, url: str
 ) -> Tuple[str, ics.Event]:
     """
     Extract event information from an event entry.
@@ -757,8 +757,8 @@ def main() -> None:
     """
     logger.info("Starting scraping script. ##############")
 
-    # rss_feeds = settings.get("rss_feeds")
-    # generate_rss_feed(rss_feeds)
+    rss_feeds = settings.get("rss_feeds")
+    generate_rss_feed(rss_feeds)
 
     enable_move = settings.default.get("enable_move_rss")
     destination_folder = settings.default.get("destination_folder")
