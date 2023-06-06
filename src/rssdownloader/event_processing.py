@@ -8,14 +8,9 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 
-from rss_downloader.log_helper import setup_logging
-from rss_downloader.web_utils import (
-    fetch_event_image_url,
-    generate_google_maps_link,
-    render_event_html,
-)
+from rssdownloader import helpers, web_utils
 
-logger = setup_logging()
+logger = helpers.setup_logging()
 
 
 def process_event_entry(
@@ -78,13 +73,13 @@ def build_event_html(event: ics.Event, ical_link: str) -> str:
     """
 
     event_data = extract_event_data(event)
-    image_url = fetch_event_image_url(event_data["url"])
-    google_maps_link = generate_google_maps_link(event_data["location"])
+    image_url = web_utils.fetch_event_image_url(event_data["url"])
+    google_maps_link = web_utils.generate_google_maps_link(event_data["location"])
     entrance_fee = parse_entrance_fee(event_data["url"])
     extended_description = parse_extended_description(event_data["url"])
     exhibition_hours_html = parse_exhibition_hours(event_data["url"])
 
-    event_html = render_event_html(
+    event_html = web_utils.render_event_html(
         event_data,
         image_url,
         google_maps_link,

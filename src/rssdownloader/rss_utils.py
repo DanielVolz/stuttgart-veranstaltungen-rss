@@ -2,9 +2,9 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 
-from rss_downloader.log_helper import setup_logging
+from rssdownloader import helpers
 
-logger = setup_logging()
+logger = helpers.setup_logging()
 
 
 def count_events(xml_file: str) -> int:

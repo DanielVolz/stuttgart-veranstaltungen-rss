@@ -1,6 +1,8 @@
 import logging
 import os
 
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../"))
+
 
 def setup_logging() -> logging.Logger:
     """
@@ -10,14 +12,19 @@ def setup_logging() -> logging.Logger:
         logging.Logger: The logger object for logging events.
     """
 
+    # Create a new log directory path
+    log_directory = os.path.join(ROOT_DIR, "log")
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
+
     log_file = "rss_downloader.log"
-    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), log_file)
+    log_file_path = os.path.join(log_directory, log_file)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.FileHandler(log_file_path), logging.StreamHandler()],
     )
-    log = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
-    return log
+    return logger

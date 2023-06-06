@@ -3,9 +3,9 @@ import shlex
 import subprocess
 import sys
 
-from rss_downloader.log_helper import setup_logging
+from rssdownloader import helpers
 
-logger = setup_logging()
+logger = helpers.setup_logging()
 
 DOCKER_VERSION_COMMAND = ["docker", "--version"]
 DOCKER_PS_COMMAND_FORMAT = "docker ps --filter name={} --format '{{.Names}}'"

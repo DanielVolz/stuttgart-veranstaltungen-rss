@@ -3,13 +3,15 @@ import sys
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Tuple
 
-from rss_downloader.calendar_utils import create_date_list
-from rss_downloader.event_processing import process_event_entry
-from rss_downloader.log_helper import setup_logging
-from rss_downloader.rss_utils import count_events
-from rss_downloader.web_utils import fetch_event_entries
+from rssdownloader import (
+    calendar_utils,
+    event_processing,
+    helpers,
+    rss_utils,
+    web_utils,
+)
 
-logger = setup_logging()
+logger = helpers.setup_logging()
 
 
 def generate_rss_feed(rss_feeds: List[Dict[str, str]]) -> None:
@@ -50,16 +52,16 @@ def generate_rss_feed(rss_feeds: List[Dict[str, str]]) -> None:
         )
 
         rss, channel = create_rss_element(rss_title)
-        date_list = create_date_list()
+        date_list = calendar_utils.create_date_list()
 
         for date in date_list:
             date_str = date.strftime("%Y-%m-%d")
             url = f"https://www.stuttgart.de/service/veranstaltungen.php?form=eventSearch-1.form&sp:dateFrom[]={date_str}&sp:dateTo[]={date_str}&sp:categories[77306][]={rss_category}&action=submit"
 
-            event_entries = fetch_event_entries(url)
+            event_entries = web_utils.fetch_event_entries(url)
 
             for event_entry in event_entries:
-                process_event_entry(event_entry, url, channel)
+                event_processing.process_event_entry(event_entry, url, channel)
 
         write_rss_to_file(rss, rss_name)
 
@@ -111,7 +113,7 @@ def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
         logger.error(f"Failed to write RSS data to '{rss_path}': {e}")
         return
 
-    logger.info(f"{count_events(rss_path)} events added.")
+    logger.info(f"{rss_utils.count_events(rss_path)} events added to '{rss_name}'.")
     logger.info(
         f"RSS feed '{rss_name}' in '{script_directory}' generated successfully!"
     )

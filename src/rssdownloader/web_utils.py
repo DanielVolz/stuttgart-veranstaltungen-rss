@@ -6,10 +6,10 @@ import jinja2
 import requests
 from bs4 import BeautifulSoup
 
-from rss_downloader.config import settings
-from rss_downloader.log_helper import setup_logging
+from rssdownloader import helpers
+from rssdownloader.config import settings
 
-logger = setup_logging()
+logger = helpers.setup_logging()
 
 
 def fetch_event_entries(url: str) -> List[BeautifulSoup]:
@@ -130,7 +130,7 @@ def render_event_html(
     """
     template_loader = jinja2.FileSystemLoader(
         searchpath=os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "./templates"
+            os.path.dirname(os.path.abspath(__file__)), "../../templates"
         )
     )
     template_env = jinja2.Environment(loader=template_loader, autoescape=True)
