@@ -92,14 +92,15 @@ def update_nextcloud_news(
         logger.error("nextcloud_container_name is not set or empty.")
         return
 
+    # Check if the specified Nextcloud container is running
     container = get_running_containers(nextcloud_container_name)
-
     if not container:
         logger.error(f"Container '{nextcloud_container_name}' is not running.")
         return
 
     logger.info(f"Container '{nextcloud_container_name}' is running.")
 
+    # Get the list of RSS feeds for the specified user
     feed_list = subprocess.check_output(
         [
             "docker",
@@ -113,6 +114,8 @@ def update_nextcloud_news(
             nextcloud_user_id,
         ]
     )
+
+    # Extract the feed IDs matching the specified top-level domain
     nextcloud_news_feeds = json.loads(feed_list)
     nextcloud_news_feed_ids = [
         nextcloud_news_feed["id"]
@@ -120,12 +123,14 @@ def update_nextcloud_news(
         if nextcloud_news_feed["url"].startswith(tld_rss_feed)
     ]
 
+    # Exit early if there are no matching feeds to update
     if not nextcloud_news_feed_ids:
         logger.info(
             f"No feeds starting with '{tld_rss_feed}' to update in Nextcloud News."
         )
         return
 
+    # Mark as read and update Nextcloud News feeds for the specified user
     logger.info("Begin updating Nextcloud News feeds.")
     for nextcloud_news_feed_id in nextcloud_news_feed_ids:
         commands = [
