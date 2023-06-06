@@ -17,7 +17,7 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 
-from config import settings
+from config.config import settings
 
 DOCKER_VERSION_COMMAND = ["docker", "--version"]
 DOCKER_PS_COMMAND_FORMAT = "docker ps --filter name={} --format '{{.Names}}'"
