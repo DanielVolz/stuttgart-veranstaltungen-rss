@@ -759,7 +759,7 @@ def main() -> None:
     Returns:
         None
     """
-    logger.info("Starting scraping script. ##############")
+    logger.info("## Starting scraping script. ##")
 
     rss_feeds = settings.get("rss_feeds")
     # generate_rss_feed(rss_feeds)
@@ -776,7 +776,7 @@ def main() -> None:
         nextcloud_user_id, tld_rss_feed, nextcloud_container_name, enable_update
     )
 
-    logger.info("Stopping scraping script. ##############")
+    logger.info("## Stopping scraping script. ##")
 
 
 if __name__ == "__main__":

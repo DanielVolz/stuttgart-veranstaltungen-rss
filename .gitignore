@@ -183,3 +183,7 @@ cspell.json
 
 # Ignore my settings file
 *.toml
+
+remove_docstring/*
+output.py
+docstrings.txt
