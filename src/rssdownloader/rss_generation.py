@@ -100,9 +100,11 @@ def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
     Returns:
         None
     """
+    rss_directory = os.path.join(helpers.PROJECT_ROOT, "rss")
+    rss_path = os.path.join(rss_directory, rss_name)
 
-    script_directory = os.path.dirname(os.path.abspath(__file__))
-    rss_path = os.path.join(script_directory, rss_name)
+    if not os.path.exists(rss_directory):
+        os.makedirs(rss_directory)
 
     rss_data = ET.tostring(rss, encoding="utf-8")
 
@@ -114,6 +116,4 @@ def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
         return
 
     logger.info(f"{rss_utils.count_events(rss_path)} events added to '{rss_name}'.")
-    logger.info(
-        f"RSS feed '{rss_name}' in '{script_directory}' generated successfully!"
-    )
+    logger.info(f"RSS feed '{rss_name}' in '{rss_directory}' generated successfully!")

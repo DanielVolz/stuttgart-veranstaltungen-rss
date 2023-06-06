@@ -56,7 +56,7 @@ def move_rss_files(destination_folder: str, enable_move: bool) -> None:
         logger.error("destination_folder is not set or empty.")
         return None
 
-    project_folder = os.path.dirname(os.path.abspath(__file__))
+    rss_directory = os.path.join(helpers.PROJECT_ROOT, "rss")
 
     # Check if destination_folder exists and is a directory
     try:
@@ -70,15 +70,17 @@ def move_rss_files(destination_folder: str, enable_move: bool) -> None:
             f"destination_folder is not a directory: {destination_folder}"
         ) from exc
 
-    file_list = os.listdir(project_folder)
+    file_list = os.listdir(rss_directory)
     files_moved = False
 
     for file_name in file_list:
         if file_name.endswith(".rss"):
-            source_path = os.path.join(project_folder, file_name)
+            source_path = os.path.join(rss_directory, file_name)
             destination_path = os.path.join(destination_folder, file_name)
             shutil.move(source_path, destination_path)
-            logger.info(f"Moved file '{file_name}' to '{destination_folder}'")
+            logger.info(
+                f"Moved file '{file_name}' to '{os.path.abspath(destination_folder)}'"
+            )
             files_moved = True
 
     if not files_moved:

@@ -1,7 +1,7 @@
 import logging
 import os
 
-ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../"))
+PROJECT_ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../"))
 
 
 def setup_logging() -> logging.Logger:
@@ -13,7 +13,7 @@ def setup_logging() -> logging.Logger:
     """
 
     # Create a new log directory path
-    log_directory = os.path.join(ROOT_DIR, "log")
+    log_directory = os.path.join(PROJECT_ROOT, "log")
     if not os.path.exists(log_directory):
         os.makedirs(log_directory)
 
