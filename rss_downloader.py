@@ -68,12 +68,12 @@ def get_running_containers(container_name: str) -> bool:
         sys.exit(1)
 
     command = (
-        f"docker ps --filter name={shlex.quote(container_name)} --format '{{.Names}}'"
+        f"docker ps --filter name={shlex.quote(container_name)} --format"
+        " '{{.Names}}'"
     )
-    output = subprocess.check_output(shlex.split(command), text=True)
+    nextcloud_container = subprocess.check_output(shlex.split(command), text=True)
 
-    running_containers = output.splitlines()
-    return container_name in running_containers
+    return container_name in nextcloud_container
 
 
 def execute_shell_command(command: str) -> None:
@@ -112,7 +112,7 @@ def update_nextcloud_news(
         - nextcloud_user_id (str): The ID of the Nextcloud user.
         - tld_rss_feed (str): The top-level domain of the RSS feed.
         - nextcloud_container_name (str): The name of the Nextcloud Docker container.
-        - enable_update (bool): Flag indicating whether the update is enabled.
+        - enable_update (bool): Flag indicating whether Nextcloud News feed(s) update is enabled.
 
     Returns:
         None
@@ -140,6 +140,8 @@ def update_nextcloud_news(
         logger.error(f"Container '{nextcloud_container_name}' is not running.")
         return
 
+    logger.info(f"Container '{nextcloud_container_name}' is running.")
+
     feed_list = subprocess.check_output(
         [
             "docker",
@@ -166,7 +168,7 @@ def update_nextcloud_news(
         )
         return
 
-    logger.info("Updating Nextcloud News feeds.")
+    logger.info("Beginn updating Nextcloud News feeds.")
     for nextcloud_news_feed_id in nextcloud_news_feed_ids:
         commands = [
             (
@@ -673,7 +675,7 @@ def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
         return
 
     logger.info(f"{count_events(rss_path)} events added.")
-    logger.info(f"RSS feed '{rss_name}' in {rss_path} generated successfully!")
+    logger.info(f"RSS feed '{rss_name}' in {script_directory} generated successfully!")
 
 
 def generate_rss_feed(rss_feeds: List[Dict[str, str]]) -> None:
@@ -758,7 +760,7 @@ def main() -> None:
     logger.info("Starting scraping script. ##############")
 
     rss_feeds = settings.get("rss_feeds")
-    generate_rss_feed(rss_feeds)
+    # generate_rss_feed(rss_feeds)
 
     enable_move = settings.default.get("enable_move_rss")
     destination_folder = settings.default.get("destination_folder")
