@@ -2,6 +2,7 @@ import json
 import shlex
 import subprocess
 import sys
+from typing import Any, Dict, List
 
 from rssdownloader import helpers
 
@@ -100,7 +101,31 @@ def update_nextcloud_news(
 
     logger.info(f"Container '{nextcloud_container_name}' is running.")
 
-    # Get the list of RSS feeds for the specified user
+    nextcloud_news_feeds = get_feed_list(nextcloud_user_id, nextcloud_container_name)
+    nextcloud_news_feed_ids = filter_feed_ids_by_tld(nextcloud_news_feeds, tld_rss_feed)
+
+    if not nextcloud_news_feed_ids:
+        logger.info(
+            f"No feeds starting with '{tld_rss_feed}' to update in Nextcloud News."
+        )
+        return
+
+    update_feeds(nextcloud_user_id, nextcloud_container_name, nextcloud_news_feed_ids)
+
+
+def get_feed_list(
+    nextcloud_user_id: str, nextcloud_container_name: str
+) -> List[Dict[str, Any]]:
+    """
+    Get the list of RSS feeds for the specified Nextcloud user.
+
+    Parameters:
+        nextcloud_user_id (str): The ID of the Nextcloud user.
+        nextcloud_container_name (str): The name of the Nextcloud Docker container.
+
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries containing the feed information.
+    """
     feed_list = subprocess.check_output(
         [
             "docker",
@@ -114,23 +139,45 @@ def update_nextcloud_news(
             nextcloud_user_id,
         ]
     )
+    return json.loads(feed_list)
 
-    # Extract the feed IDs matching the specified top-level domain
-    nextcloud_news_feeds = json.loads(feed_list)
-    nextcloud_news_feed_ids = [
+
+def filter_feed_ids_by_tld(
+    nextcloud_news_feeds: List[Dict[str, Any]], tld_rss_feed: str
+) -> List[int]:
+    """
+    Extract the feed IDs from the given Nextcloud news feeds that match the specified top-level domain.
+
+    Parameters:
+        nextcloud_news_feeds (List[Dict[str, Any]]): A list of Nextcloud news feeds.
+        tld_rss_feed (str): The top-level domain of the RSS feed.
+
+    Returns:
+        List[int]: A list of feed IDs matching the specified top-level domain.
+    """
+    return [
         nextcloud_news_feed["id"]
         for nextcloud_news_feed in nextcloud_news_feeds
         if nextcloud_news_feed["url"].startswith(tld_rss_feed)
     ]
 
-    # Exit early if there are no matching feeds to update
-    if not nextcloud_news_feed_ids:
-        logger.info(
-            f"No feeds starting with '{tld_rss_feed}' to update in Nextcloud News."
-        )
-        return
 
-    # Mark as read and update Nextcloud News feeds for the specified user
+def update_feeds(
+    nextcloud_user_id: str,
+    nextcloud_container_name: str,
+    nextcloud_news_feed_ids: List[int],
+) -> None:
+    """
+    Mark as read and update Nextcloud News feeds for the specified user.
+
+    Parameters:
+        nextcloud_user_id (str): The ID of the Nextcloud user.
+        nextcloud_container_name (str): The name of the Nextcloud Docker container.
+        nextcloud_news_feed_ids (List[int]): A list of feed IDs to update.
+
+    Returns:
+        None
+    """
     logger.info("Begin updating Nextcloud News feeds.")
     for nextcloud_news_feed_id in nextcloud_news_feed_ids:
         commands = [
