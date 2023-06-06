@@ -8,7 +8,7 @@ from rssdownloader import helpers
 logger = helpers.setup_logging()
 
 DOCKER_VERSION_COMMAND = ["docker", "--version"]
-DOCKER_PS_COMMAND_FORMAT = "docker ps --filter name={} --format '{{.Names}}'"
+DOCKER_PS_COMMAND_FORMAT = "docker ps --filter name={} --format '{{{{.Names}}}}'"
 
 
 def get_running_containers(container_name: str) -> bool:
