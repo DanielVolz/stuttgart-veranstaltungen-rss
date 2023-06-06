@@ -164,11 +164,11 @@ def update_nextcloud_news(
 
     if not nextcloud_news_feed_ids:
         logger.info(
-            f"No feeds starting with {tld_rss_feed} to update in Nextcloud News."
+            f"No feeds starting with '{tld_rss_feed}' to update in Nextcloud News."
         )
         return
 
-    logger.info("Beginn updating Nextcloud News feeds.")
+    logger.info("Begin updating Nextcloud News feeds.")
     for nextcloud_news_feed_id in nextcloud_news_feed_ids:
         commands = [
             (
@@ -226,7 +226,7 @@ def move_rss_files(destination_folder: str, enable_move: bool) -> None:
             source_path = os.path.join(project_folder, file_name)
             destination_path = os.path.join(destination_folder, file_name)
             shutil.move(source_path, destination_path)
-            logger.info("Moved file: %s", file_name)
+            logger.info(f"Moved file '{file_name}' to '{destination_folder}'")
             files_moved = True
 
     if not files_moved:
@@ -633,21 +633,20 @@ def add_event_to_channel(
         if existing_title == event_title and existing_pub_date == pub_date:
             event_exists = True
             logger.info(
-                f"Skipping adding event: Duplicate event: {event_title}, date:"
-                f" {pub_date}"
+                f"Skip adding event (duplicate): {event_title}, date: {pub_date}"
             )
             break
 
     if event_exists:
         return
 
-    # Add the event to the XML channel
+    # Add the event to the rss channel
     item = ET.SubElement(channel, "item")
     ET.SubElement(item, "title").text = event_title
     ET.SubElement(item, "description").text = event_html
     ET.SubElement(item, "link").text = event.url
     ET.SubElement(item, "pubDate").text = pub_date
-    logger.info(f"Added to XML file: {event_title}, date: {pub_date}")
+    logger.info(f"Added event to rss file: {event_title}, date: {pub_date}")
 
 
 def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
@@ -671,11 +670,13 @@ def write_rss_to_file(rss: ET.Element, rss_name: str) -> None:
         with open(rss_path, "w", encoding="utf-8") as f:
             f.write(rss_data.decode("utf-8"))
     except IOError as e:
-        logger.error(f"Failed to write RSS data to {rss_path}: {e}")
+        logger.error(f"Failed to write RSS data to '{rss_path}': {e}")
         return
 
     logger.info(f"{count_events(rss_path)} events added.")
-    logger.info(f"RSS feed '{rss_name}' in {script_directory} generated successfully!")
+    logger.info(
+        f"RSS feed '{rss_name}' in '{script_directory}' generated successfully!"
+    )
 
 
 def generate_rss_feed(rss_feeds: List[Dict[str, str]]) -> None:
@@ -711,7 +712,8 @@ def generate_rss_feed(rss_feeds: List[Dict[str, str]]) -> None:
             continue
 
         logger.info(
-            f"Start scraping the RSS category {rss_title} into the file: {rss_name}."
+            f"Start scraping the RSS category '{rss_title}' into the file:"
+            f" '{rss_name}'."
         )
 
         rss, channel = create_rss_element(rss_title)
