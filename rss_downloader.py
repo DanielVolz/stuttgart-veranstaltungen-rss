@@ -19,6 +19,9 @@ from bs4 import BeautifulSoup
 
 from config import settings
 
+DOCKER_VERSION_COMMAND = ["docker", "--version"]
+DOCKER_PS_COMMAND_FORMAT = "docker ps --filter name={} --format '{{.Names}}'"
+
 
 def count_events(xml_file: str) -> int:
     """
@@ -62,15 +65,12 @@ def get_running_containers(container_name: str) -> bool:
     """
     try:
         # Check if Docker is installed
-        subprocess.run(["docker", "--version"], check=True, capture_output=True)
+        subprocess.run(DOCKER_VERSION_COMMAND, check=True, capture_output=True)
     except FileNotFoundError:
         logger.error("Docker is not installed on this host. Exiting.")
         sys.exit(1)
 
-    command = (
-        f"docker ps --filter name={shlex.quote(container_name)} --format"
-        " '{{.Names}}'"
-    )
+    command = DOCKER_PS_COMMAND_FORMAT.format(shlex.quote(container_name))
     nextcloud_container = subprocess.check_output(shlex.split(command), text=True)
 
     return container_name in nextcloud_container
