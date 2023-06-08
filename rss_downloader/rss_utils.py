@@ -2,7 +2,7 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 
-from rssdownloader import helpers
+from rss_downloader import helpers
 
 logger = helpers.setup_logging()
 

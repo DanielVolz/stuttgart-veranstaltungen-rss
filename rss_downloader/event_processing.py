@@ -8,7 +8,7 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 
-from rssdownloader import helpers, web_utils
+from rss_downloader import helpers, web_utils
 
 logger = helpers.setup_logging()
 

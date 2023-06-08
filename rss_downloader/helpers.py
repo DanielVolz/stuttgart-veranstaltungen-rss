@@ -1,7 +1,7 @@
 import logging
 import os
 
-PROJECT_ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../"))
+PROJECT_ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), "../"))
 
 
 def setup_logging() -> logging.Logger:

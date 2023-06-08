@@ -3,7 +3,7 @@ import sys
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Tuple
 
-from rssdownloader import (
+from rss_downloader import (
     calendar_utils,
     event_processing,
     helpers,

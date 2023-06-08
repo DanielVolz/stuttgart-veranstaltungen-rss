@@ -4,12 +4,57 @@ import subprocess
 import sys
 from typing import Any, Dict, List
 
-from rssdownloader import helpers
+from rss_downloader import helpers
 
 logger = helpers.setup_logging()
 
 DOCKER_VERSION_COMMAND = ["docker", "--version"]
 DOCKER_PS_COMMAND_FORMAT = "docker ps --filter name={} --format '{{{{.Names}}}}'"
+
+
+def update_nextcloud_news(
+    nextcloud_user_id: str,
+    tld_rss_feed: str,
+    nextcloud_container_name: str,
+    enable_update: bool,
+) -> None:
+    """
+    Update Nextcloud News feeds for a specific user.
+
+    Parameters:
+        - nextcloud_user_id (str): The ID of the Nextcloud user.
+        - tld_rss_feed (str): The top-level domain of the RSS feed.
+        - nextcloud_container_name (str): The name of the Nextcloud Docker container.
+        - enable_update (bool): Flag indicating whether Nextcloud News feed(s) update is enabled.
+
+    Returns:
+        None
+    """
+
+    # Check if a settings variable is not set or empty.
+    if not validate_input(
+        nextcloud_user_id, tld_rss_feed, nextcloud_container_name, enable_update
+    ):
+        return
+
+    # Check if the specified Nextcloud container is running
+    container = get_running_containers(nextcloud_container_name)
+    if not container:
+        logger.error(f"Container '{nextcloud_container_name}' is not running.")
+        return
+
+    logger.info(f"Container '{nextcloud_container_name}' is running.")
+
+    nextcloud_news_feeds = get_feed_list(nextcloud_user_id, nextcloud_container_name)
+    nextcloud_news_feed_ids = filter_feed_ids_by_tld(nextcloud_news_feeds, tld_rss_feed)
+
+    if not nextcloud_news_feed_ids:
+        logger.info(
+            f"No feeds starting with '{tld_rss_feed}' to update in Nextcloud News."
+        )
+        return
+
+    update_feeds(nextcloud_user_id, nextcloud_container_name, nextcloud_news_feed_ids)
 
 
 def get_running_containers(container_name: str) -> bool:
@@ -175,48 +220,3 @@ def update_feeds(
         ]
         for command in commands:
             execute_shell_command(command)
-
-
-def update_nextcloud_news(
-    nextcloud_user_id: str,
-    tld_rss_feed: str,
-    nextcloud_container_name: str,
-    enable_update: bool,
-) -> None:
-    """
-    Update Nextcloud News feeds for a specific user.
-
-    Parameters:
-        - nextcloud_user_id (str): The ID of the Nextcloud user.
-        - tld_rss_feed (str): The top-level domain of the RSS feed.
-        - nextcloud_container_name (str): The name of the Nextcloud Docker container.
-        - enable_update (bool): Flag indicating whether Nextcloud News feed(s) update is enabled.
-
-    Returns:
-        None
-    """
-
-    # Check if a settings variable is not set or empty.
-    if not validate_input(
-        nextcloud_user_id, tld_rss_feed, nextcloud_container_name, enable_update
-    ):
-        return
-
-    # Check if the specified Nextcloud container is running
-    container = get_running_containers(nextcloud_container_name)
-    if not container:
-        logger.error(f"Container '{nextcloud_container_name}' is not running.")
-        return
-
-    logger.info(f"Container '{nextcloud_container_name}' is running.")
-
-    nextcloud_news_feeds = get_feed_list(nextcloud_user_id, nextcloud_container_name)
-    nextcloud_news_feed_ids = filter_feed_ids_by_tld(nextcloud_news_feeds, tld_rss_feed)
-
-    if not nextcloud_news_feed_ids:
-        logger.info(
-            f"No feeds starting with '{tld_rss_feed}' to update in Nextcloud News."
-        )
-        return
-
-    update_feeds(nextcloud_user_id, nextcloud_container_name, nextcloud_news_feed_ids)

@@ -2,7 +2,7 @@ from dynaconf import Dynaconf
 
 settings = Dynaconf(
     envvar_prefix="DYNACONF",
-    settings_files=["./config/settings.toml"],
+    settings_files=["./rss_downloader/config/settings.toml"],
 )
 
 # `envvar_prefix` = export envvars with `export DYNACONF_FOO=bar`.
