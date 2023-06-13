@@ -181,8 +181,6 @@ cspell.json
 # Ignore rss files
 *.rss
 
-# Ignore my settings file
-*.toml
 
 remove_docstring/*
 output.py
