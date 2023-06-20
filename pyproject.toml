@@ -32,3 +32,20 @@ bandit = "^1.7.5"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+[tool.isort]
+profile = "black"
+[tool.flake8]
+max-line-length = 200
+ignore = "E203,W503"
+show-source = true
+[tool.pylint]
+args = [
+  "--max-line-length=200",
+  "--disable=C0114,C0115,W1203",
+  "--good-names=e,f,i,j,k,l"
+]
+[tool.bandit]
+args = ["-ll", "-s", "B101,B110"]
