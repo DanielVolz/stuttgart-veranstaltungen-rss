@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "rss-downloader"
+version = "0.1.0"
+description = ""
+authors = ["Daniel Volz <mail@danielvolz.org>"]
+license = "AGPL"
+readme = "README.md"
+packages = [{include = "rss_downloader"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+beautifulsoup4 = "4.9.3"
+dynaconf = "3.1.12"
+ics = "0.7.2"
+jinja2 = "2.11.3"
+pytz = "2023.3"
+requests = "2.31.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
