@@ -4,9 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run as module",
+            "label": "Run with poetry as module",
             "type": "shell",
-            "command": "python -m rss_downloader",
+            "command": "poetry run python -m rss_downloader",
             "group": {
                 "kind": "build",
                 "isDefault": true

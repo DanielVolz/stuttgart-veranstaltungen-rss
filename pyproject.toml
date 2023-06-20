@@ -15,6 +15,7 @@ ics = "0.7.2"
 jinja2 = "2.11.3"
 pytz = "2023.3"
 requests = "2.31.0"
+markupsafe = "2.0.1"
 
 
 [build-system]
