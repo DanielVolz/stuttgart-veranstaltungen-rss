@@ -25,7 +25,7 @@ rss-downloader = "rss_downloader.__main__:main"
 mypy = "^1.3.0"
 pytest = "^7.3.2"
 flake8 = "^6.0.0"
-black = "^23.3.0"
+black = "^24.3.0"
 isort = "^5.12.0"
 bandit = "^1.7.5"
 
